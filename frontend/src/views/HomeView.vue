@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useSwal } from '../../utils/useSwal'
+
+const { handleSuccess, handleError, handleLoading } = useSwal()
+
+onMounted(() => {
+  handleError('Your decentralized platform for transparent giving.', 'Welcome to Zakat Chain', true)
+})
 
 const features = ref([
   {
