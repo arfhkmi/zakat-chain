@@ -1,200 +1,196 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import {
   ZakatRequestDto,
-  JenisKiraan,
-  JenisPendapatan,
-  TanpaTolakan,
-  DenganTolakan,
+  CalculationType,
+  IncomeType,
+  WithoutDeductions,
+  WithDeductions,
 } from './zakat_dto';
 
 const NISAB_2026 = 33_996;
 const ZAKAT_RATE = 0.025;
 
 const DEDUCTION_RATES = {
-  diriSendiri: 12_000,
-  isteri: 5_000,
-  anakBawah18: 2_000,
-  anakAtas18Belajar: 5_000,
-  pendidikanSendiriCap: 2_000,
+  selfAllowance: 12_000,        
+  perWife: 5_000,               // max 4 wives
+  perChildUnder18: 2_000,
+  perChildAbove18Studying: 5_000,
+  selfEducationCap: 2_000,
 };
 
 // ---------------------------------------------------------------------------
 // Response shapes
 // ---------------------------------------------------------------------------
-export interface TolakanPerincian {
-  diriSendiri: number;
-  isteri: number;
-  anakBawah18: number;
-  anakAtas18Belajar: number;
-  ibubapa: number;
-  kwsp: number;
-  pendidikanSendiri: number;
-  jumlah: number;
+export interface DeductionBreakdown {
+  selfAllowance: number;
+  wives: number;
+  childrenUnder18: number;
+  childrenAbove18Studying: number;
+  parentExpenses: number;
+  epf: number;
+  selfEducation: number;
+  total: number;
 }
 
 export interface ZakatResult {
   nisab: number;
-  jumlahPendapatanTahunan: number;
-  jumlahTolakan?: number;
-  jumlahPendapatanLayakDiZakat: number;
-  carumanBerzakat: number;
-  jumlahSelepasCaruman: number;
-  layakBerzakat: boolean;
-  zakatSetahun: number;
-  zakatBulanan: number;
-  tolakanPerincian?: TolakanPerincian;
+  totalAnnualIncome: number;
+  totalDeductions?: number;
+  eligibleIncome: number;
+  zakatContribution: number;
+  amountAfterContribution: number;
+  isEligible: boolean;
+  zakatPerYear: number;
+  zakatPerMonth: number;
+  deductionBreakdown?: DeductionBreakdown;
 }
 
 @Injectable()
 export class ZakatService {
   calculate(dto: ZakatRequestDto): ZakatResult {
-    switch (dto.jenisKiraan) {
-      case JenisKiraan.TANPA_TOLAKAN:
-        if (!dto.tanpaTolakan) {
+    switch (dto.calculationType) {
+      case CalculationType.WITHOUT_DEDUCTIONS:
+        if (!dto.withoutDeductions) {
           throw new BadRequestException(
-            'tanpaTolakan object is required for TANPA_TOLAKAN mode.',
+            'withoutDeductions object is required for WITHOUT_DEDUCTIONS mode.',
           );
         }
-        return this.hitungTanpaTolakan(dto.tanpaTolakan);
+        return this.calculateWithoutDeductions(dto.withoutDeductions);
 
-      case JenisKiraan.DENGAN_TOLAKAN:
-        if (!dto.denganTolakan) {
+      case CalculationType.WITH_DEDUCTIONS:
+        if (!dto.withDeductions) {
           throw new BadRequestException(
-            'denganTolakan object is required for DENGAN_TOLAKAN mode.',
+            'withDeductions object is required for WITH_DEDUCTIONS mode.',
           );
         }
-        return this.hitungDenganTolakan(dto.denganTolakan);
+        return this.calculateWithDeductions(dto.withDeductions);
 
       default:
-        throw new BadRequestException('jenisKiraan tidak sah.');
+        throw new BadRequestException('Invalid calculationType.');
     }
   }
 
   // -------------------------------------------------------------------------
-  // Mode 1: Tanpa Tolakan
+  // Mode 1: Without Deductions
   // -------------------------------------------------------------------------
-  private hitungTanpaTolakan(data: TanpaTolakan): ZakatResult {
-    const pendapatanTahunan = this.annualize(
-      data.jenisPendapatan,
-      data.pendapatanBulanan,
-      data.pendapatanTahunan,
+  private calculateWithoutDeductions(data: WithoutDeductions): ZakatResult {
+    const annualSalary = this.annualize(
+      data.incomeType,
+      data.monthlyIncome,
+      data.annualIncome,
     );
 
-    const pendapatanLain = data.pendapatanLain ?? 0;
-    const jumlahPendapatanTahunan = pendapatanTahunan + pendapatanLain;
-    const carumanBerzakat = data.carumanBerzakat ?? 0;
+    const otherIncome = data.otherIncome ?? 0;
+    const totalAnnualIncome = annualSalary + otherIncome;
+    const zakatContribution = data.zakatContribution ?? 0;
 
-    const layakBerzakat = jumlahPendapatanTahunan >= NISAB_2026;
+    const isEligible = totalAnnualIncome >= NISAB_2026;
 
-    if (!layakBerzakat) {
+    if (!isEligible) {
       return this.buildResult({
-        jumlahPendapatanTahunan,
-        carumanBerzakat,
-        layakBerzakat: false,
+        totalAnnualIncome,
+        zakatContribution,
+        isEligible: false,
       });
     }
 
-    const zakatSetahunKotor = round2(jumlahPendapatanTahunan * ZAKAT_RATE);
-    const jumlahSelepasCaruman = Math.max(0, zakatSetahunKotor - carumanBerzakat);
+    const grossZakat = round2(totalAnnualIncome * ZAKAT_RATE);
+    const amountAfterContribution = Math.max(0, grossZakat - zakatContribution);
 
     return this.buildResult({
-      jumlahPendapatanTahunan,
-      carumanBerzakat,
-      layakBerzakat: true,
-      zakatSetahunKotor,
-      jumlahSelepasCaruman,
+      totalAnnualIncome,
+      zakatContribution,
+      isEligible: true,
+      grossZakat,
+      amountAfterContribution,
     });
   }
 
   // -------------------------------------------------------------------------
-  // Mode 2: Dengan Tolakan
+  // Mode 2: With Deductions
   // -------------------------------------------------------------------------
-  private hitungDenganTolakan(data: DenganTolakan): ZakatResult {
-    const pendapatanGajiTahunan = this.annualize(
-      data.jenisPendapatan,
-      data.pendapatanBulanan,
-      data.pendapatanTahunan,
+  private calculateWithDeductions(data: WithDeductions): ZakatResult {
+    const annualSalary = this.annualize(
+      data.incomeType,
+      data.monthlyIncome,
+      data.annualIncome,
     );
 
-    const pendapatanLain = data.pendapatanLain ?? 0;
-    const jumlahPendapatanTahunan = pendapatanGajiTahunan + pendapatanLain;
-    const carumanBerzakat = data.carumanBerzakat ?? 0;
+    const otherIncome = data.otherIncome ?? 0;
+    const totalAnnualIncome = annualSalary + otherIncome;
+    const zakatContribution = data.zakatContribution ?? 0;
 
-    const t = data.tolakan;
+    const d = data.deductions;
 
     // Clamp inputs
-    const bilIsteri = Math.min(Math.max(0, t.bilIsteri ?? 0), 4);
-    const bilAnakBawah18 = Math.max(0, t.bilAnakBawah18 ?? 0);
-    const bilAnakAtas18Belajar = Math.max(0, t.bilAnakAtas18Belajar ?? 0);
-    const kwspPeratus = Math.min(Math.max(0, t.kwspPeratus ?? 0), 100);
+    const numberOfWives = Math.min(Math.max(0, d.numberOfWives ?? 0), 4);
+    const numberOfChildrenUnder18 = Math.max(0, d.numberOfChildrenUnder18 ?? 0);
+    const numberOfChildrenAbove18Studying = Math.max(0, d.numberOfChildrenAbove18Studying ?? 0);
+    const epfPercentage = Math.min(Math.max(0, d.epfPercentage ?? 0), 100);
 
-    // Calculate each deduction item
-    const diriSendiri = DEDUCTION_RATES.diriSendiri; 
-    const isteri = bilIsteri * DEDUCTION_RATES.isteri;
-    const anakBawah18 = bilAnakBawah18 * DEDUCTION_RATES.anakBawah18;
-    const anakAtas18Belajar = bilAnakAtas18Belajar * DEDUCTION_RATES.anakAtas18Belajar;
-    const ibubapa = Math.max(0, t.ibubapa ?? 0);
+    // Calculate each deduction
+    const selfAllowance = DEDUCTION_RATES.selfAllowance;
+    const wives = numberOfWives * DEDUCTION_RATES.perWife;
+    const childrenUnder18 = numberOfChildrenUnder18 * DEDUCTION_RATES.perChildUnder18;
+    const childrenAbove18Studying = numberOfChildrenAbove18Studying * DEDUCTION_RATES.perChildAbove18Studying;
+    const parentExpenses = Math.max(0, d.parentExpenses ?? 0);
 
-    // KWSP applies only on salary portion (not pendapatanLain)
-    const kwsp = round2((kwspPeratus / 100) * pendapatanGajiTahunan);
+    // EPF applies only on salary portion (not otherIncome)
+    const epf = round2((epfPercentage / 100) * annualSalary);
 
-    // Pendidikan sendiri is capped
-    const pendidikanSendiri = Math.min(
-      Math.max(0, t.pendidikanSendiri ?? 0),
-      DEDUCTION_RATES.pendidikanSendiriCap,
+    // Self education capped at RM 2,000
+    const selfEducation = Math.min(
+      Math.max(0, d.selfEducationExpenses ?? 0),
+      DEDUCTION_RATES.selfEducationCap,
     );
 
-    const jumlahTolakan = round2(
-      diriSendiri +
-        isteri +
-        anakBawah18 +
-        anakAtas18Belajar +
-        ibubapa +
-        kwsp +
-        pendidikanSendiri,
+    const totalDeductions = round2(
+      selfAllowance +
+        wives +
+        childrenUnder18 +
+        childrenAbove18Studying +
+        parentExpenses +
+        epf +
+        selfEducation,
     );
 
-    const jumlahPendapatanLayakDiZakat = Math.max(
-      0,
-      round2(jumlahPendapatanTahunan - jumlahTolakan),
-    );
+    const eligibleIncome = Math.max(0, round2(totalAnnualIncome - totalDeductions));
+    const isEligible = eligibleIncome >= NISAB_2026;
 
-    const layakBerzakat = jumlahPendapatanLayakDiZakat >= NISAB_2026;
-
-    const tolakanPerincian: TolakanPerincian = {
-      diriSendiri,
-      isteri,
-      anakBawah18,
-      anakAtas18Belajar,
-      ibubapa,
-      kwsp,
-      pendidikanSendiri,
-      jumlah: jumlahTolakan,
+    const deductionBreakdown: DeductionBreakdown = {
+      selfAllowance,
+      wives,
+      childrenUnder18,
+      childrenAbove18Studying,
+      parentExpenses,
+      epf,
+      selfEducation,
+      total: totalDeductions,
     };
 
-    if (!layakBerzakat) {
+    if (!isEligible) {
       return this.buildResult({
-        jumlahPendapatanTahunan,
-        jumlahTolakan,
-        jumlahPendapatanLayakDiZakat,
-        carumanBerzakat,
-        layakBerzakat: false,
-        tolakanPerincian,
+        totalAnnualIncome,
+        totalDeductions,
+        eligibleIncome,
+        zakatContribution,
+        isEligible: false,
+        deductionBreakdown,
       });
     }
 
-    const zakatSetahunKotor = round2(jumlahPendapatanLayakDiZakat * ZAKAT_RATE);
-    const jumlahSelepasCaruman = Math.max(0, zakatSetahunKotor - carumanBerzakat);
+    const grossZakat = round2(eligibleIncome * ZAKAT_RATE);
+    const amountAfterContribution = Math.max(0, grossZakat - zakatContribution);
 
     return this.buildResult({
-      jumlahPendapatanTahunan,
-      jumlahTolakan,
-      jumlahPendapatanLayakDiZakat,
-      carumanBerzakat,
-      layakBerzakat: true,
-      zakatSetahunKotor,
-      jumlahSelepasCaruman,
-      tolakanPerincian,
+      totalAnnualIncome,
+      totalDeductions,
+      eligibleIncome,
+      zakatContribution,
+      isEligible: true,
+      grossZakat,
+      amountAfterContribution,
+      deductionBreakdown,
     });
   }
 
@@ -202,66 +198,66 @@ export class ZakatService {
   // Helpers
   // -------------------------------------------------------------------------
   private annualize(
-    jenis: JenisPendapatan,
-    bulanan?: number,
-    tahunan?: number,
+    incomeType: IncomeType,
+    monthly?: number,
+    annual?: number,
   ): number {
-    if (jenis === JenisPendapatan.BULANAN) {
-      if (!bulanan || bulanan < 0) {
+    if (incomeType === IncomeType.MONTHLY) {
+      if (!monthly || monthly < 0) {
         throw new BadRequestException(
-          'pendapatanBulanan diperlukan apabila jenisPendapatan = BULANAN.',
+          'monthlyIncome is required when incomeType is MONTHLY.',
         );
       }
-      return round2(bulanan * 12);
+      return round2(monthly * 12);
     }
 
-    if (jenis === JenisPendapatan.TAHUNAN) {
-      if (!tahunan || tahunan < 0) {
+    if (incomeType === IncomeType.ANNUAL) {
+      if (!annual || annual < 0) {
         throw new BadRequestException(
-          'pendapatanTahunan diperlukan apabila jenisPendapatan = TAHUNAN.',
+          'annualIncome is required when incomeType is ANNUAL.',
         );
       }
-      return tahunan;
+      return annual;
     }
 
-    throw new BadRequestException('jenisPendapatan tidak sah.');
+    throw new BadRequestException('Invalid incomeType.');
   }
 
   private buildResult(params: {
-    jumlahPendapatanTahunan: number;
-    jumlahTolakan?: number;
-    jumlahPendapatanLayakDiZakat?: number;
-    carumanBerzakat: number;
-    layakBerzakat: boolean;
-    zakatSetahunKotor?: number;
-    jumlahSelepasCaruman?: number;
-    tolakanPerincian?: TolakanPerincian;
+    totalAnnualIncome: number;
+    totalDeductions?: number;
+    eligibleIncome?: number;
+    zakatContribution: number;
+    isEligible: boolean;
+    grossZakat?: number;
+    amountAfterContribution?: number;
+    deductionBreakdown?: DeductionBreakdown;
   }): ZakatResult {
     const {
-      jumlahPendapatanTahunan,
-      jumlahTolakan,
-      jumlahPendapatanLayakDiZakat,
-      carumanBerzakat,
-      layakBerzakat,
-      jumlahSelepasCaruman,
-      tolakanPerincian,
+      totalAnnualIncome,
+      totalDeductions,
+      eligibleIncome,
+      zakatContribution,
+      isEligible,
+      amountAfterContribution,
+      deductionBreakdown,
     } = params;
 
-    const effectiveLayak = jumlahPendapatanLayakDiZakat ?? jumlahPendapatanTahunan;
-    const zakatSetahun = jumlahSelepasCaruman ?? 0;
-    const zakatBulanan = round2(zakatSetahun / 12);
+    const effectiveEligibleIncome = eligibleIncome ?? totalAnnualIncome;
+    const zakatPerYear = amountAfterContribution ?? 0;
+    const zakatPerMonth = round2(zakatPerYear / 12);
 
     return {
       nisab: NISAB_2026,
-      jumlahPendapatanTahunan,
-      ...(jumlahTolakan !== undefined && { jumlahTolakan }),
-      jumlahPendapatanLayakDiZakat: effectiveLayak,
-      carumanBerzakat,
-      jumlahSelepasCaruman: jumlahSelepasCaruman ?? 0,
-      layakBerzakat,
-      zakatSetahun,
-      zakatBulanan,
-      ...(tolakanPerincian && { tolakanPerincian }),
+      totalAnnualIncome,
+      ...(totalDeductions !== undefined && { totalDeductions }),
+      eligibleIncome: effectiveEligibleIncome,
+      zakatContribution,
+      amountAfterContribution: amountAfterContribution ?? 0,
+      isEligible,
+      zakatPerYear,
+      zakatPerMonth,
+      ...(deductionBreakdown && { deductionBreakdown }),
     };
   }
 }
