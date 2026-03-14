@@ -1,74 +1,74 @@
-export enum JenisKiraan {
-  TANPA_TOLAKAN = 'TANPA_TOLAKAN',
-  DENGAN_TOLAKAN = 'DENGAN_TOLAKAN',
+export enum CalculationType {
+  WITHOUT_DEDUCTIONS = 'WITHOUT_DEDUCTIONS',
+  WITH_DEDUCTIONS = 'WITH_DEDUCTIONS',
 }
 
-export enum JenisPendapatan {
-  BULANAN = 'BULANAN',
-  TAHUNAN = 'TAHUNAN',
+export enum IncomeType {
+  MONTHLY = 'MONTHLY',
+  ANNUAL = 'ANNUAL',
 }
 
 // ---------------------------------------------------------------------------
-// Tanpa Tolakan
+// Without Deductions
 // ---------------------------------------------------------------------------
-export class TanpaTolakan {
-  /** User picks BULANAN or TAHUNAN, then fills one of the two fields below */
-  jenisPendapatan: JenisPendapatan;
+export class WithoutDeductions {
+  /** User picks MONTHLY or ANNUAL, then fills one of the two fields below */
+  incomeType: IncomeType;
 
-  /** Required when jenisPendapatan = BULANAN */
-  pendapatanBulanan?: number;
+  /** Required when incomeType = MONTHLY */
+  monthlyIncome?: number;
 
-  /** Required when jenisPendapatan = TAHUNAN */
-  pendapatanTahunan?: number;
+  /** Required when incomeType = ANNUAL */
+  annualIncome?: number;
 
-  /** Bonus, sewaan, pencen, hadiah, etc. (annual lump-sum) */
-  pendapatanLain?: number;
+  /** Other income: bonus, rental, pension, gifts, etc. (annual lump-sum) */
+  otherIncome?: number;
 
   /** Zakat already deducted by employer / agency (annual) */
-  carumanBerzakat?: number;
+  zakatContribution?: number;
 }
 
 // ---------------------------------------------------------------------------
-// Dengan Tolakan
+// With Deductions
 // ---------------------------------------------------------------------------
-export class TolakanDeductions {
+export class Deductions {
   /** Number of wives, RM 5,000 each, max 4 */
-  bilIsteri: number;
+  numberOfWives: number;
 
   /** Number of children under 18, RM 2,000 each */
-  bilAnakBawah18: number;
+  numberOfChildrenUnder18: number;
 
   /** Number of children 18+ studying, RM 5,000 each */
-  bilAnakAtas18Belajar: number;
+  numberOfChildrenAbove18Studying: number;
 
-  /** Ibu Bapa – free-form, user enters own amount */
-  ibubapa: number;
+  /** Parents expenses - free-form, user enters own amount */
+  parentExpenses: number;
 
-  /** KWSP deduction percentage (e.g. 11 for 11%), applied on gross annual salary */
-  kwspPeratus: number;
+  /** EPF deduction percentage (e.g. 11 for 11%), applied on gross annual salary */
+  epfPercentage: number;
 
   /** Self-education expenses, capped at RM 2,000/year */
-  pendidikanSendiri: number;
+  selfEducationExpenses: number;
 }
 
-export class DenganTolakan {
-  jenisPendapatan: JenisPendapatan;
-  pendapatanBulanan?: number;
-  pendapatanTahunan?: number;
-  pendapatanLain?: number;
-  carumanBerzakat?: number;
-  tolakan: TolakanDeductions;
+export class WithDeductions {
+  incomeType: IncomeType;
+  monthlyIncome?: number;
+  annualIncome?: number;
+  otherIncome?: number;
+  zakatContribution?: number;
+  deductions: Deductions;
 }
 
 // ---------------------------------------------------------------------------
 // Main request DTO
 // ---------------------------------------------------------------------------
 export class ZakatRequestDto {
-  jenisKiraan: JenisKiraan;
+  calculationType: CalculationType;
 
-  /** Populate when jenisKiraan = TANPA_TOLAKAN */
-  tanpaTolakan?: TanpaTolakan;
+  /** Populate when calculationType = WITHOUT_DEDUCTIONS */
+  withoutDeductions?: WithoutDeductions;
 
-  /** Populate when jenisKiraan = DENGAN_TOLAKAN */
-  denganTolakan?: DenganTolakan;
+  /** Populate when calculationType = WITH_DEDUCTIONS */
+  withDeductions?: WithDeductions;
 }
