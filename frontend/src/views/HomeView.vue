@@ -91,7 +91,7 @@ const steps = ref([
       </section>
 
       <!-- Why Zakat Chain -->
-      <section class="w-full h-auto flex flex-col items-center animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200 !my-20 !pt-10">
+      <section class="w-full h-auto flex flex-col items-center md:!px-0 !px-6 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200 !my-20 !pt-10">
         <div class="text-center space-y-4 !my-10">
           <h2 class="text-3xl md:text-4xl font-bold">Why Zakat Chain?</h2>
           <p class="text-muted-foreground text-lg">The trusted and recognized decentralized zakat platform.</p>
@@ -135,7 +135,7 @@ const steps = ref([
       </section>
 
       <!-- FAQ -->
-      <section class="w-full h-auto max-w-3xl mx-auto flex flex-col items-center !mt-20 !mb-50 !pt-10 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
+      <section class="w-full h-auto max-w-3xl mx-auto flex flex-col items-center md:!px-0 !px-6 !mt-20 !mb-50 !pt-10 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
         <div class="text-center space-y-4 !mb-10">
           <h2 class="text-3xl md:text-4xl font-bold">Frequently Asked Questions</h2>
           <p class="text-muted-foreground text-lg">Answers to commonly asked questions</p>
@@ -143,8 +143,8 @@ const steps = ref([
 
         <Accordion type="single" collapsible class="w-full">
           <AccordionItem value="item-1" class="border-border">
-            <AccordionTrigger class="text-left text-lg hover:text-primary">Should Income Zakat be calculated on gross or net income?</AccordionTrigger>
-            <AccordionContent class="text-muted-foreground text-base leading-relaxed ">
+            <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">Should Income Zakat be calculated on gross or net income?</AccordionTrigger>
+            <AccordionContent class="text-muted-foreground text-base leading-relaxed !mb-2">
               Income Zakat must be calculated on gross income, not net. There are 2 methods: <br/><br/>
               1. Calculation Without Basic Expenses Deduction (Had Kifayah) <br/>
               2. Calculation With Basic Expenses Deduction (Had Kifayah)
@@ -152,16 +152,16 @@ const steps = ref([
           </AccordionItem>
 
           <AccordionItem value="item-2" class="border-border">
-            <AccordionTrigger class="text-left text-lg hover:text-primary">When can Income Zakat be paid?</AccordionTrigger>
-            <AccordionContent class="text-muted-foreground text-base leading-relaxed">
+            <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">When can Income Zakat be paid?</AccordionTrigger>
+            <AccordionContent class="text-muted-foreground text-base leading-relaxed !mb-2">
               <strong>Annually:</strong> after one full year (haul) of income has passed. <br/>
               <strong>Monthly:</strong> by deducting continuously from your salary (this method is recommended to remain consistent and make managing your obligations easier).
             </AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="item-3" class="border-border">
-            <AccordionTrigger class="text-left text-lg hover:text-primary">Are official receipts issued through Zakat Chain recognized for tax deduction?</AccordionTrigger>
-            <AccordionContent class="text-muted-foreground text-base leading-relaxed">
+            <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">Are official receipts issued through Zakat Chain recognized for tax deduction?</AccordionTrigger>
+            <AccordionContent class="text-muted-foreground text-base leading-relaxed !mb-2">
               Yes, official zakat receipts issued via Zakat Chain offer verifiable cryptographic proof of payment, and are recognized by relevant inland revenue boards depending on your jurisdiction.
             </AccordionContent>
           </AccordionItem>
