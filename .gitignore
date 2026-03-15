@@ -24,7 +24,7 @@
 # compiled output
 /backend/dist
 /backend/build
-
+/backend/node_modules
 # Logs
 /backend/logs
 /backend/*.log
