@@ -68,10 +68,12 @@ const steps = ref([
         </p>
 
         <div class="flex flex-col sm:flex-row justify-center gap-4 !pt-8 !mt-10">
-          <Button size="lg" class="!px-5 !py-6 text-lg rounded-xl shadow-xl shadow-primary/20 transition-transform active:scale-95 group">
-            <Wallet class="!mr-2 h-5 w-5 group-hover:-translate-y-1 group-hover:rotate-12 transition-transform" />
-            Pay Earning Zakat Now
-          </Button>
+          <RouterLink to="/zakat-calculator">
+            <Button size="lg" class="!px-5 !py-6 text-lg rounded-xl shadow-xl shadow-primary/20 transition-transform active:scale-95 group">
+              <Wallet class="!mr-2 h-5 w-5 group-hover:-translate-y-1 group-hover:rotate-12 transition-transform" />
+              Pay Earning Zakat Now
+            </Button>
+          </RouterLink>
         </div>
       </section>
 

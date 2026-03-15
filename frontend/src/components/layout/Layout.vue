@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import zakatLogo from '@/assets/image/zakat-chain/zakatchain-logo.webp'
 import muddarLogo from '@/assets/image/mudaar-tech/mudaartech-logo.webp'
@@ -23,10 +23,42 @@ import {
   Menu,
   X
 } from 'lucide-vue-next'
-import { useAppKit, useAppKitAccount } from '@reown/appkit/vue'
+import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/vue'
 
 const { open } = useAppKit()
 const account = useAppKitAccount()
+const { walletProvider } = useAppKitProvider<any>('eip155')
+
+const BSC_TESTNET = {
+  chainId: '0x61',
+  chainName: 'BNB Smart Chain Testnet',
+  nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 },
+  rpcUrls: ['https://bsc-testnet.publicnode.com'],
+  blockExplorerUrls: ['https://testnet.bscscan.com'],
+}
+
+// After the user connects any wallet, switch to BSC Testnet via the already-selected provider.
+// This avoids the multi-wallet mediator conflict and properly handles MetaMask's 4902 error.
+watch(
+  () => account.value?.isConnected,
+  async (isConnected) => {
+    const provider = walletProvider.value as any
+    if (isConnected && provider) {
+      try {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [BSC_TESTNET],
+        })
+      } catch (err: any) {
+        console.warn('Could not switch to BSC Testnet:', err?.message)
+      }
+    }
+  }
+)
+
+const connectWallet = () => {
+  open()
+}
 
 const isScrolled = ref(false)
 const isMobileMenuOpen = ref(false)
@@ -84,7 +116,7 @@ const footerLinks = {
             Earning Zakat Info
           </RouterLink>
           <button 
-            @click="open()" 
+            @click="connectWallet()" 
             class="!px-3 !py-1 bg-primary text-primary-foreground font-bold rounded-sm shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
           >
             {{ account?.isConnected ? (account.address ? account.address.slice(0, 6) + '...' + account.address.slice(-4) : 'Connected') : 'Connect Wallet' }}
@@ -130,7 +162,7 @@ const footerLinks = {
 
          <div @click="isMobileMenuOpen = false" class="!my-5 group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
           <button 
-            @click="open()" 
+            @click="connectWallet()" 
             class="w-full !px-3 !py-1 bg-primary text-primary-foreground font-bold rounded-sm shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
           >
             {{ account?.isConnected ? (account.address ? account.address.slice(0, 6) + '...' + account.address.slice(-4) : 'Connected') : 'Connect Wallet' }}

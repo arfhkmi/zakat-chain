@@ -193,8 +193,8 @@ const conditions = ref([
       <footer class="text-center !p-12 bg-gradient-to-t from-primary/10 to-transparent rounded-t-3xl border-t border-primary/20">
         <h3 class="text-2xl font-bold !mb-4">Ready to fulfill your obligation?</h3>
         <p class="text-muted-foreground !mb-8">Join thousands of others using the blockchain for a more transparent future of giving.</p>
-        <RouterLink to="/" class="inline-flex items-center justify-center rounded-xl !px-8 !py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95">
-          Go To Dashboard
+        <RouterLink to="/zakat-calculator" class="inline-flex items-center justify-center rounded-xl !px-8 !py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95">
+          Pay Zakat Now
         </RouterLink>
       </footer>
 
