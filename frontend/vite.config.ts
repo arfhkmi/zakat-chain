@@ -10,7 +10,13 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag.includes('appkit')
+        }
+      }
+    }),
     vueDevTools(),
   ],
   resolve: {

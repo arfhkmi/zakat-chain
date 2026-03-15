@@ -23,6 +23,10 @@ import {
   Menu,
   X
 } from 'lucide-vue-next'
+import { useAppKit, useAppKitAccount } from '@reown/appkit/vue'
+
+const { open } = useAppKit()
+const account = useAppKitAccount()
 
 const isScrolled = ref(false)
 const isMobileMenuOpen = ref(false)
@@ -41,9 +45,9 @@ onUnmounted(() => {
 
 const footerLinks = {
   quickLinks: [
-    { name: 'Main', href: '#' },
-    { name: 'About Us', href: '#' },
-    { name: 'Earning Zakat Info', href: '#' },
+    { name: 'Main', path: '/' },
+    { name: 'About Us', path: '/about-us' },
+    { name: 'Earning Zakat Info', path: '/earning-zakat-info' },
   ]
 }
 </script>
@@ -72,13 +76,19 @@ const footerLinks = {
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center gap-8 lg:gap-12">
-          <RouterLink to="/" class="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Main</RouterLink>
-          <div class="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
+          <RouterLink to="/" exact-active-class="!text-primary" class="text-sm font-semibold !text-muted-foreground hover:text-primary transition-colors">Main</RouterLink>
+          <RouterLink to="/about-us" exact-active-class="!text-primary" class="text-sm font-semibold !text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
             About Us
-          </div>
-          <div class="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
-            Zakat Info
-          </div>
+          </RouterLink>
+          <RouterLink to="/earning-zakat-info" exact-active-class="!text-primary" class="text-sm font-semibold !text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
+            Earning Zakat Info
+          </RouterLink>
+          <button 
+            @click="open()" 
+            class="!px-3 !py-1 bg-primary text-primary-foreground font-bold rounded-sm shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            {{ account?.isConnected ? (account.address ? account.address.slice(0, 6) + '...' + account.address.slice(-4) : 'Connected') : 'Connect Wallet' }}
+          </button>
         </div>
 
         <!-- Mobile Menu Toggle -->
@@ -97,26 +107,36 @@ const footerLinks = {
         v-if="isMobileMenuOpen" 
         class="md:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-white/5 shadow-2xl !px-10 py-12 space-y-8 animate-in fade-in slide-in-from-top-8 flex flex-col items-end text-right z-50"
       >
-        <RouterLink to="/" @click="isMobileMenuOpen = false" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all">
+        <RouterLink to="/" @click="isMobileMenuOpen = false" exact-active-class="!text-primary" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all">
           <span>Main</span>
           <div class="w-12 h-12 rounded-2xl !my-2 bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-300">
             <Globe class="w-6 h-6 text-primary" />
           </div>
         </RouterLink>
         
-        <div @click="isMobileMenuOpen = false" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
+        <RouterLink to="/about-us" @click="isMobileMenuOpen = false" exact-active-class="!text-primary" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
           <span>About Us</span>
           <div class="w-12 h-12 rounded-2xl !my-2 bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-300">
             <Info class="w-6 h-6 text-primary" />
           </div>
-        </div>
+        </RouterLink>
 
-        <div @click="isMobileMenuOpen = false" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
-          <span>Zakat Info</span>
+        <RouterLink to="/earning-zakat-info" @click="isMobileMenuOpen = false" exact-active-class="!text-primary" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
+          <span>Earning Zakat Info</span>
           <div class="w-12 h-12 rounded-2xl !my-2 bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-300">
             <BookOpen class="w-6 h-6 text-primary" />
           </div>
+        </RouterLink>
+
+         <div @click="isMobileMenuOpen = false" class="!my-5 group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
+          <button 
+            @click="open()" 
+            class="w-full !px-3 !py-1 bg-primary text-primary-foreground font-bold rounded-sm shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+          >
+            {{ account?.isConnected ? (account.address ? account.address.slice(0, 6) + '...' + account.address.slice(-4) : 'Connected') : 'Connect Wallet' }}
+          </button>
         </div>
+
 
       </div>
     </header>
@@ -150,9 +170,9 @@ const footerLinks = {
           <h4 class="text-foreground font-bold text-sm mb-8 tracking-widest uppercase !mb-2">Resources</h4>
           <ul class="space-y-4">
             <li v-for="link in footerLinks.quickLinks" :key="link.name">
-              <a :href="link.href" class="text-sm !text-text hover:!text-primary hover:translate-x-1 transition-all flex items-center gap-2 group">
+              <RouterLink :to="link.path" exact-active-class="!text-primary" class="text-sm !text-muted-foreground hover:!text-primary hover:translate-x-1 transition-all flex items-center gap-2 group">
                 {{ link.name }}
-              </a>
+              </RouterLink>
             </li>
           </ul>
         </div>
@@ -160,14 +180,14 @@ const footerLinks = {
         <!-- Support -->
         <div class="space-y-8 flex flex-col items-center lg:items-start text-center lg:text-left">
           <h4 class="text-foreground font-bold text-sm !mb-2 tracking-widest uppercase">Contact Us</h4>
-          <div class="space-y-5">
+        <div class="space-y-5">
             <div class="flex items-center gap-2 group">
               <div class="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                 <Mail class="w-4 h-4" />
               </div>
               <div>
                 <p class="text-[10px] font-bold text-muted-foreground uppercase">Email Supported</p>
-                <p class="text-sm text-foreground font-medium">hello@muddar.tech</p>
+                <a href="mailto:ariefhakimimohdazdi@gmail.com" class="text-sm text-foreground font-medium hover:text-primary transition-colors">ariefhakimimohdazdi@gmail.com</a>
               </div>
             </div>
           </div>

@@ -106,6 +106,20 @@ a {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Reown AppKit / Web3Modal overrides */
+  --apkt-accent: #10b981;
+  --w3m-accent: #10b981;
+  --wui-color-accent-100: #10b981 !important;
+  --wui-color-blue-100: #10b981 !important;
+}
+
+appkit-button, w3m-button {
+  --w3m-accent: #10b981 !important;
+  --apkt-accent: #10b981 !important;
+  --wui-color-accent-100: #10b981 !important;
+  --wui-color-blue-100: #10b981 !important;
+  --wui-color-inherit: #10b981 !important;
 }
 
 @layer base {
