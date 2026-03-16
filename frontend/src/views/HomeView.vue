@@ -13,8 +13,8 @@ import { Calculator, CheckCircle, HandCoins, ShieldCheck, Wallet, Receipt, Award
 
 const features = ref([
   {
-    title: 'Smart Earning Zakat Management',
-    description: 'Automated calculation and distribution of Earning Zakat using blockchain technology.',
+    title: 'Smart Zakat Management',
+    description: 'Automated calculation and distribution of Zakat using blockchain technology.',
     icon: Award,
   },
   {
@@ -31,12 +31,12 @@ const features = ref([
 
 const steps = ref([
   {
-    title: 'Calculate Earning Zakat',
+    title: 'Calculate Zakat',
     description: 'Use the calculator to compute the exact amount.',
     icon: Calculator,
   },
   {
-    title: 'Pay Earning Zakat',
+    title: 'Pay Zakat',
     description: 'Complete your payment securely via the blockchain.',
     icon: Wallet,
   },
@@ -58,21 +58,67 @@ const steps = ref([
       <section class="w-full h-auto flex flex-col items-center text-center !py-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
 
         
-        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground max-w-4xl !mx-auto leading-tight">
-          PAY EARNING ZAKAT <br />
-          <span class="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">EASY, FAST & TRUSTED</span>
+        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground max-w-4xl !mx-auto leading-tight uppercase">
+          Fulfill Your Zakat <br />
+          <span class="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">Easy, Fast & Trusted</span>
         </h1>
         
         <p class="text-xl text-muted-foreground max-w-2xl !mx-auto leading-relaxed">
-          Your decentralized platform for transparent giving. Fulfill your earning zakat obligations with complete trust and traceability.
+          Your decentralized platform for transparent giving. Fulfill your zakat obligations with complete trust and traceability.
         </p>
 
         <div class="flex flex-col sm:flex-row justify-center gap-4 !pt-8 !mt-10">
           <RouterLink to="/zakat-calculator">
             <Button size="lg" class="!px-5 !py-6 text-lg rounded-xl shadow-xl shadow-primary/20 transition-transform active:scale-95 group">
               <Wallet class="!mr-2 h-5 w-5 group-hover:-translate-y-1 group-hover:rotate-12 transition-transform" />
-              Pay Earning Zakat Now
+              Pay Zakat Now
             </Button>
+          </RouterLink>
+        </div>
+      </section>
+
+      <!-- Zakat Types Section -->
+      <section class="w-full !mt-20 !mb-10 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-100">
+        <div class="text-center space-y-4 !mb-12">
+          <h2 class="text-3xl md:text-4xl font-bold">Zakat We Support</h2>
+          <p class="text-muted-foreground text-lg">Choose the type of Zakat you wish to learn about or fulfill.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <RouterLink to="/fitrah-zakat-info" class="group">
+            <Card class="h-full bg-card/50 backdrop-blur-xl border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 cursor-pointer overflow-hidden">
+              <div class="h-2 w-full bg-primary/20 group-hover:bg-primary transition-colors"></div>
+              <CardHeader class="!pb-2">
+                <div class="flex items-center justify-between">
+                  <CardTitle class="text-2xl font-bold">Fitrah Zakat</CardTitle>
+                  <HandCoins class="h-6 w-6 text-primary" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p class="text-muted-foreground !mb-4">Mandatory charitable contribution required of every Muslim at the end of Ramadan.</p>
+                <div class="flex items-center text-primary font-semibold group-hover:gap-2 transition-all">
+                  Learn More <span class="!ml-1">→</span>
+                </div>
+              </CardContent>
+            </Card>
+          </RouterLink>
+
+          <RouterLink to="/earning-zakat-info" class="group">
+            <Card class="h-full bg-card/50 backdrop-blur-xl border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 cursor-pointer overflow-hidden">
+              <div class="h-2 w-full bg-emerald-500/20 group-hover:bg-emerald-500 transition-colors"></div>
+              <CardHeader class="!pb-2">
+                <div class="flex items-center justify-between">
+                  <CardTitle class="text-2xl font-bold">Earning Zakat</CardTitle>
+                  <Award class="h-6 w-6 text-emerald-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p class="text-muted-foreground !mb-4">Zakat on income or earnings from employment, business, or professions.</p>
+                <div class="flex items-center text-emerald-500 font-semibold group-hover:gap-2 transition-all">
+                  Learn More <span class="!ml-1">→</span>
+                </div>
+              </CardContent>
+            </Card>
           </RouterLink>
         </div>
       </section>
@@ -100,7 +146,7 @@ const steps = ref([
       <!-- 4 Easy Steps -->
       <section class="w-full h-auto flex flex-col items-center animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300 !my-20 !pt-10">
         <div class="text-center space-y-4 !mb-20">
-          <h2 class="text-3xl md:text-4xl font-bold">3 Easy Steps to Pay Earning Zakat</h2>
+          <h2 class="text-3xl md:text-4xl font-bold">3 Easy Steps to Pay Zakat</h2>
           <p class="text-muted-foreground text-lg">A simple and fast payment process</p>
         </div>
 
@@ -130,26 +176,23 @@ const steps = ref([
 
         <Accordion type="single" collapsible class="w-full">
           <AccordionItem value="item-1" class="border-border">
-            <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">Should Earning Zakat be calculated on gross or net earning?</AccordionTrigger>
+            <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">What types of Zakat can I pay here?</AccordionTrigger>
             <AccordionContent class="text-muted-foreground text-base leading-relaxed !mb-2">
-              Earning Zakat must be calculated on gross earning, not net. There are 2 methods: <br/><br/>
-              1. Calculation Without Basic Expenses Deduction (Had Kifayah) <br/>
-              2. Calculation With Basic Expenses Deduction (Had Kifayah)
+              Currently, Zakat Chain supports <strong>Fitrah Zakat</strong> (paid during Ramadan) and <strong>Earning Zakat</strong> (paid on income). We use smart contracts to ensure your contributions are distributed transparently and efficiently.
             </AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="item-2" class="border-border">
-            <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">When can Earning Zakat be paid?</AccordionTrigger>
+            <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">How do I calculate my Zakat?</AccordionTrigger>
             <AccordionContent class="text-muted-foreground text-base leading-relaxed !mb-2">
-              <strong>Annually:</strong> after one full year (haul) of earning has passed. <br/>
-              <strong>Monthly:</strong> by deducting continuously from your salary (this method is recommended to remain consistent and make managing your obligations easier).
+              You can use our built-in <strong>Zakat Calculator</strong>. For Fitrah Zakat, it uses current rates based on your consumption. For Earning Zakat, it calculates based on your gross income with or without basic deductions (Had Kifayah).
             </AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="item-3" class="border-border">
             <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">Are official receipts issued through Zakat Chain recognized for tax deduction?</AccordionTrigger>
             <AccordionContent class="text-muted-foreground text-base leading-relaxed !mb-2">
-              Yes, official earning zakat receipts issued via Zakat Chain offer verifiable cryptographic proof of payment, and are recognized by relevant inland revenue boards depending on your jurisdiction.
+              Yes, official receipts issued via Zakat Chain offer verifiable cryptographic proof of payment. They are recognized by relevant authorities in supported jurisdictions for tax deduction purposes.
             </AccordionContent>
           </AccordionItem>
         </Accordion>

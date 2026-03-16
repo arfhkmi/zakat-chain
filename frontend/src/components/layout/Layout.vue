@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Smartphone,
   Menu,
+  Heart,
   X
 } from 'lucide-vue-next'
 import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/vue'
@@ -60,6 +61,7 @@ const connectWallet = () => {
   open()
 }
 
+const isInfoOpen = ref(false)
 const isScrolled = ref(false)
 const isMobileMenuOpen = ref(false)
 
@@ -80,6 +82,7 @@ const footerLinks = {
     { name: 'Main', path: '/' },
     { name: 'About Us', path: '/about-us' },
     { name: 'Earning Zakat Info', path: '/earning-zakat-info' },
+    { name: 'Fitrah Zakat Info', path: '/fitrah-zakat-info' },
   ]
 }
 </script>
@@ -109,12 +112,34 @@ const footerLinks = {
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center gap-8 lg:gap-12">
           <RouterLink to="/" exact-active-class="!text-primary" class="text-sm font-semibold !text-muted-foreground hover:text-primary transition-colors">Main</RouterLink>
-          <RouterLink to="/about-us" exact-active-class="!text-primary" class="text-sm font-semibold !text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
-            About Us
-          </RouterLink>
-          <RouterLink to="/earning-zakat-info" exact-active-class="!text-primary" class="text-sm font-semibold !text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap">
-            Earning Zakat Info
-          </RouterLink>
+                    <RouterLink to="/about-us" exact-active-class="!text-primary" class="text-sm font-semibold !text-muted-foreground hover:text-primary transition-colors">About Us</RouterLink>
+
+          
+          <!-- Dropdown for About -->
+          <div class="relative group" @mouseenter="isInfoOpen = true" @mouseleave="isInfoOpen = false">
+            <button 
+              class="flex items-center gap-1 text-sm font-semibold !text-muted-foreground hover:text-primary transition-colors cursor-pointer whitespace-nowrap"
+              :class="{ '!text-primary': $route.path.includes('info') || $route.path === '/about-us' }"
+            >
+              Zakat Info
+              <ChevronDown class="w-4 h-4 transition-transform group-hover:rotate-180" />
+            </button>
+            <div 
+              v-if="isInfoOpen"
+              class="absolute top-full -left-4 w-56 !pt-4 animate-in fade-in slide-in-from-top-2 duration-200"
+            >
+              <div class="bg-card border border-white/5 rounded-xl shadow-2xl overflow-hidden !p-2 backdrop-blur-xl">
+                <RouterLink to="/earning-zakat-info" class="flex items-center gap-3 !px-4 !py-3 rounded-lg hover:bg-white/5 transition-colors">
+                  <BookOpen class="w-4 h-4 text-primary" />
+                  <span class="text-xs font-bold">Earning Zakat Info</span>
+                </RouterLink>
+                <RouterLink to="/fitrah-zakat-info" class="flex items-center gap-3 !px-4 !py-3 rounded-lg hover:bg-white/5 transition-colors">
+                  <Heart class="w-4 h-4 text-primary" />
+                  <span class="text-xs font-bold">Fitrah Zakat Info</span>
+                </RouterLink>
+              </div>
+            </div>
+          </div>
           <button 
             @click="connectWallet()" 
             class="!px-3 !py-1 bg-primary text-primary-foreground font-bold rounded-sm shadow-lg hover:bg-primary/90 hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
@@ -154,9 +179,16 @@ const footerLinks = {
         </RouterLink>
 
         <RouterLink to="/earning-zakat-info" @click="isMobileMenuOpen = false" exact-active-class="!text-primary" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
-          <span>Earning Zakat Info</span>
+          <span>Earning Zakat</span>
           <div class="w-12 h-12 rounded-2xl !my-2 bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-300">
             <BookOpen class="w-6 h-6 text-primary" />
+          </div>
+        </RouterLink>
+
+        <RouterLink to="/fitrah-zakat-info" @click="isMobileMenuOpen = false" exact-active-class="!text-primary" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
+          <span>Fitrah Zakat</span>
+          <div class="w-12 h-12 rounded-2xl !my-2 bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-300">
+            <Heart class="w-6 h-6 text-primary" />
           </div>
         </RouterLink>
 

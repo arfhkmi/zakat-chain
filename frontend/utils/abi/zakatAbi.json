@@ -1,10 +1,171 @@
 [
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_paymentTokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_collectorAddress",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "rate",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "threshold",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint256",
+            "name": "selfDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "wifeDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "childMinorDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "childStudyDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "studyMaxDeduction",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct ZakatChain.IncomeInfo",
+        "name": "_incomeInfo",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint80",
+            "name": "localRate",
+            "type": "uint80"
+          },
+          {
+            "internalType": "uint80",
+            "name": "importRate",
+            "type": "uint80"
+          },
+          {
+            "internalType": "uint80",
+            "name": "basmathiRate",
+            "type": "uint80"
+          }
+        ],
+        "internalType": "struct ZakatChain.FitrahRate",
+        "name": "_fitrahRate",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
     "inputs": [],
-    "name": "payZakat",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldCollector",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newCollector",
+        "type": "address"
+      }
+    ],
+    "name": "CollectorChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum ZakatChain.FitrahRateType",
+        "name": "rateType",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint80",
+        "name": "rate",
+        "type": "uint80"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "total",
+        "type": "uint256"
+      }
+    ],
+    "name": "FitrahPaid",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -18,17 +179,420 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "amount",
+        "name": "total",
         "type": "uint256"
+      }
+    ],
+    "name": "IncomePaid",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "collector",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isFitrah",
+        "type": "bool"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "timestamp",
+        "name": "amount",
         "type": "uint256"
       }
     ],
-    "name": "ZakatPaid",
+    "name": "ZakatWithdrawn",
     "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_newCollector",
+        "type": "address"
+      }
+    ],
+    "name": "changeCollector",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "isFitrah",
+        "type": "bool"
+      }
+    ],
+    "name": "collect",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "collector",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "fitrahRate",
+    "outputs": [
+      {
+        "internalType": "uint80",
+        "name": "localRate",
+        "type": "uint80"
+      },
+      {
+        "internalType": "uint80",
+        "name": "importRate",
+        "type": "uint80"
+      },
+      {
+        "internalType": "uint80",
+        "name": "basmathiRate",
+        "type": "uint80"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "fitrahSummary",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "count",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "total",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "incomeInfo",
+    "outputs": [
+      {
+        "internalType": "uint128",
+        "name": "rate",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint128",
+        "name": "threshold",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint256",
+        "name": "selfDeduction",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "wifeDeduction",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "childMinorDeduction",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "childStudyDeduction",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "studyMaxDeduction",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "incomeSummary",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "count",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "total",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum ZakatChain.FitrahRateType",
+        "name": "rateType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint16",
+        "name": "count",
+        "type": "uint16"
+      }
+    ],
+    "name": "payFitrah",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "isWithDeduction",
+        "type": "bool"
+      },
+      {
+        "internalType": "enum ZakatChain.IncomePayType",
+        "name": "payType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "annualIncome",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "contribution",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "customAmount",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "wifeCount",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "childMinorCount",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "childStudyCount",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "parentDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "epfDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "studyDeduction",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct ZakatChain.DeductionInput",
+        "name": "deductions",
+        "type": "tuple"
+      }
+    ],
+    "name": "payIncome",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paymentToken",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint80",
+            "name": "localRate",
+            "type": "uint80"
+          },
+          {
+            "internalType": "uint80",
+            "name": "importRate",
+            "type": "uint80"
+          },
+          {
+            "internalType": "uint80",
+            "name": "basmathiRate",
+            "type": "uint80"
+          }
+        ],
+        "internalType": "struct ZakatChain.FitrahRate",
+        "name": "_fitrahRate",
+        "type": "tuple"
+      }
+    ],
+    "name": "updateFitrahRates",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "rate",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "threshold",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint256",
+            "name": "selfDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "wifeDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "childMinorDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "childStudyDeduction",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "studyMaxDeduction",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct ZakatChain.IncomeInfo",
+        "name": "_incomeInfo",
+        "type": "tuple"
+      }
+    ],
+    "name": "updateIncomeInfo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ]
