@@ -44,7 +44,7 @@ const fmtRM = (v: number) => `RM ${v.toLocaleString('en-MY', { minimumFractionDi
 
 // rate is stored in basis points (250 = 2.5%)
 const zakatRate = computed(() =>
-  incomeInfoData.value ? `${(incomeInfoData.value.rate / 100).toFixed(1)}%` : '2.5%'
+  incomeInfoData.value ? `${(incomeInfoData.value.rate / 100).toFixed(2)}%` : '2.5%'
 )
 
 const nisabValue = computed(() =>

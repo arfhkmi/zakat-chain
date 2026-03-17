@@ -599,7 +599,7 @@ watch(() => account.value.isConnected, (connected) => {
             <CardContent class="!p-6">
                 <div class="flex justify-between items-center text-sm">
                    <span class="opacity-50">Estimated Amount</span>
-                   <span class="font-bold text-primary font-mono">{{ (result?.zakatPerYear || 0) * 0.00001 }} tBNB</span>
+                   <span class="font-bold text-primary font-mono">{{ ((result?.zakatPerYear || 0) * 0.00001).toFixed(6) }} tBNB</span>
                 </div>
             </CardContent>
          </Card>

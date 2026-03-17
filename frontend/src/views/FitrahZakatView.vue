@@ -33,7 +33,7 @@ const rates = computed(() => {
       { title: 'Premium Rate', price: '—', description: 'Based on premium rice (e.g., Basmathi, Brown Rice).' },
     ]
   }
-  const fmt = (v: number) => `RM ${v.toFixed(2)}`
+  const fmt = (v: number) => `RM ${v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   return [
     { title: 'Standard Rate', price: fmt(fitrahRateData.value.localRate), description: 'Based on the price of local rice commonly consumed by the majority of the population.' },
     { title: 'Mid-Range Rate', price: fmt(fitrahRateData.value.importRate), description: 'Based on higher quality rice (e.g., Fragrant Rice, Thai Rice).' },

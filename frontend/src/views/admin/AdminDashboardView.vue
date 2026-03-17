@@ -78,7 +78,16 @@ const checkAuth = () => {
 
 const formatToken = (val: any) => {
   try {
-    return ethers.formatUnits(val.toString(), tokenInfo.value.decimals)
+    const num = parseFloat(ethers.formatUnits(val.toString(), tokenInfo.value.decimals))
+    return num.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  } catch {
+    return '0'
+  }
+}
+
+const formatCount = (val: any) => {
+  try {
+    return Number(val.toString()).toLocaleString('en-MY')
   } catch {
     return '0'
   }
@@ -302,7 +311,7 @@ onUnmounted(() => {
               <Badge class="!px-2 text-[10px] font-bold bg-amber-500/10 text-amber-400 border-amber-500/20">PAYERS</Badge>
             </div>
             <p class="text-xs text-slate-500 !mb-1">All-time Transactions</p>
-            <p class="text-xl font-bold text-white leading-none">{{ Number(contractData.fitrahSummary.count) + Number(contractData.incomeSummary.count) }}</p>
+            <p class="text-xl font-bold text-white leading-none">{{ formatCount(contractData.fitrahSummary.count + contractData.incomeSummary.count) }}</p>
             <p class="text-xs text-slate-600 !mt-1">Total transactions</p>
           </CardContent>
         </Card>
@@ -363,7 +372,7 @@ onUnmounted(() => {
               <CardContent class="!space-y-1 flex-1">
                 <div class="flex justify-between items-center !px-3 !py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors">
                   <span class="text-sm text-slate-400">Transaction Count</span>
-                  <span class="font-mono text-sm font-semibold text-white">{{ contractData.fitrahSummary.count }}</span>
+                  <span class="font-mono text-sm font-semibold text-white">{{ formatCount(contractData.fitrahSummary.count) }}</span>
                 </div>
                 <div class="flex justify-between items-center !px-3 !py-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                   <span class="text-sm font-medium text-emerald-300">Live Balance</span>
@@ -400,7 +409,7 @@ onUnmounted(() => {
               <CardContent class="!space-y-1 flex-1">
                 <div class="flex justify-between items-center !px-3 !py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors">
                   <span class="text-sm text-slate-400">Transaction Count</span>
-                  <span class="font-mono text-sm font-semibold text-white">{{ contractData.incomeSummary.count }}</span>
+                  <span class="font-mono text-sm font-semibold text-white">{{ formatCount(contractData.incomeSummary.count) }}</span>
                 </div>
                 <div class="flex justify-between items-center !px-3 !py-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
                   <span class="text-sm font-medium text-blue-300">Live Balance</span>
