@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ShieldCheck, Lock, ArrowRight } from 'lucide-vue-next'
+import { ShieldCheck, Lock, ArrowRight, FlaskConical } from 'lucide-vue-next'
 import { useSwal } from '../../../utils/useSwal'
 
 const router = useRouter()
 const password = ref('')
 const isLoading = ref(false)
-const { handleSuccess, handleError } = useSwal()
+const { handleError } = useSwal()
+
+// Temporary fake auth — replace with real backend authentication
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123'
 
 const handleLogin = async () => {
   if (!password.value) {
@@ -21,26 +23,25 @@ const handleLogin = async () => {
   }
 
   isLoading.value = true
-  
+
   setTimeout(() => {
-    if (password.value === 'admin123') {
+    if (password.value === ADMIN_PASSWORD) {
       localStorage.setItem('admin_auth', 'true')
       router.push('/admin/dashboard')
     } else {
       handleError('Incorrect admin password.', 'Access Denied')
     }
     isLoading.value = false
-  }, 800)
+  }, 600)
 }
 </script>
 
 <template>
-  <AdminLayout>
-    <div class="flex items-center justify-center !py-12 relative overflow-hidden">
+  <div class="min-h-screen bg-[#020617] text-slate-200 flex items-center justify-center relative overflow-hidden">
     <!-- Abstract Background Elements -->
     <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
     <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-    
+
     <div class="w-full max-w-md !px-4 z-10 animate-in fade-in zoom-in duration-700">
       <div class="flex flex-col items-center !mb-8 text-center">
         <div class="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center !mb-4 border border-primary/30 shadow-lg shadow-primary/10">
@@ -50,7 +51,13 @@ const handleLogin = async () => {
         <p class="text-slate-400 !mt-2">Secure access to Zakat Chain management</p>
       </div>
 
-      <Card class="bg-slate-900/50 backdrop-blur-xl border-slate-800 shadow-2xl">
+      <!-- Dev-mode notice -->
+      <div class="flex items-center !gap-2 !mb-4 !px-4 !py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
+        <FlaskConical class="w-4 h-4 shrink-0" />
+        <span>Placeholder login — awaiting backend integration. Password set via <code class="bg-amber-500/20 !px-1 rounded font-mono">VITE_ADMIN_PASSWORD</code>.</span>
+      </div>
+
+      <Card class="!p-5 bg-slate-900/50 backdrop-blur-xl border-slate-800 shadow-2xl">
         <CardHeader>
           <CardTitle class="text-xl text-white">Login</CardTitle>
           <CardDescription class="text-slate-400">Enter your administrative credentials to continue</CardDescription>
@@ -60,11 +67,11 @@ const handleLogin = async () => {
             <Label for="password" class="text-slate-300">Admin Password</Label>
             <div class="relative">
               <Lock class="absolute !left-3 !top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <Input 
-                id="password" 
-                v-model="password" 
-                type="password" 
-                placeholder="••••••••" 
+              <Input
+                id="password"
+                v-model="password"
+                type="password"
+                placeholder="••••••••"
                 class="bg-slate-950/50 border-slate-700 text-white !pl-10 h-12 focus-visible:ring-primary/50"
                 @keyup.enter="handleLogin"
               />
@@ -72,8 +79,8 @@ const handleLogin = async () => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button 
-            class="w-full h-12 text-lg font-semibold rounded-xl transition-all active:scale-[0.98]" 
+          <Button
+            class="w-full h-12 text-lg font-semibold rounded-xl transition-all active:scale-[0.98]"
             :disabled="isLoading"
             @click="handleLogin"
           >
@@ -88,13 +95,12 @@ const handleLogin = async () => {
           </Button>
         </CardFooter>
       </Card>
-      
+
       <p class="text-center !mt-8 text-slate-500 text-sm">
         Authorized personnel only. All activities are logged.
       </p>
     </div>
-    </div>
-  </AdminLayout>
+  </div>
 </template>
 
 <style scoped>

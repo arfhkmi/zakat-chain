@@ -12,10 +12,6 @@ const handleLogout = () => {
   router.push('/admin/login')
 }
 
-// Global refresh event for dashboard
-const emitRefresh = () => {
-  window.dispatchEvent(new CustomEvent('admin-refresh-data'))
-}
 </script>
 
 <template>
@@ -29,16 +25,12 @@ const emitRefresh = () => {
           </div>
           <div>
             <h1 class="text-lg font-bold text-white leading-tight">Zakat Admin</h1>
-            <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Control Panel v1.0</p>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Control Panel</p>
           </div>
         </div>
         
         <div class="flex items-center !gap-4">
-          <appkit-button size="sm" />
-          <Button variant="ghost" size="icon" @click="emitRefresh" :disabled="isLoading">
-            <RefreshCw class="w-5 h-5 text-slate-400" :class="{ 'animate-spin': isLoading }" />
-          </Button>
-          <Button variant="destructive" size="sm" class="!gap-2" @click="handleLogout">
+          <Button variant="destructive" size="sm" class="!px-2 !gap-2" @click="handleLogout">
             <LogOut class="w-4 h-4" />
             <span class="hidden sm:inline">Logout</span>
           </Button>
