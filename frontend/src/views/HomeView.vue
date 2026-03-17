@@ -68,7 +68,7 @@ const steps = ref([
         </p>
 
         <div class="flex flex-col sm:flex-row justify-center gap-4 !pt-8 !mt-10">
-          <RouterLink to="/zakat-calculator">
+          <RouterLink to="/pay-zakat">
             <Button size="lg" class="!px-5 !py-6 text-lg rounded-xl shadow-xl shadow-primary/20 transition-transform active:scale-95 group">
               <Wallet class="!mr-2 h-5 w-5 group-hover:-translate-y-1 group-hover:rotate-12 transition-transform" />
               Pay Zakat Now
@@ -88,34 +88,34 @@ const steps = ref([
           <RouterLink to="/fitrah-zakat-info" class="group">
             <Card class="h-full bg-card/50 backdrop-blur-xl border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 cursor-pointer overflow-hidden">
               <div class="h-2 w-full bg-primary/20 group-hover:bg-primary transition-colors"></div>
-              <CardHeader class="!pb-2">
+              <CardHeader class="!pb-2 !px-5">
                 <div class="flex items-center justify-between">
                   <CardTitle class="text-2xl font-bold">Fitrah Zakat</CardTitle>
                   <HandCoins class="h-6 w-6 text-primary" />
                 </div>
               </CardHeader>
               <CardContent>
-                <p class="text-muted-foreground !mb-4">Mandatory charitable contribution required of every Muslim at the end of Ramadan.</p>
-                <div class="flex items-center text-primary font-semibold group-hover:gap-2 transition-all">
+                <p class="text-muted-foreground !mb-4 !px-5">Mandatory charitable contribution required of every Muslim at the end of Ramadan.</p>
+                <div class="flex items-center !px-5 !pb-5 text-primary font-semibold group-hover:gap-2 transition-all">
                   Learn More <span class="!ml-1">→</span>
                 </div>
               </CardContent>
             </Card>
           </RouterLink>
 
-          <RouterLink to="/earning-zakat-info" class="group">
+          <RouterLink to="/income-zakat-info" class="group">
             <Card class="h-full bg-card/50 backdrop-blur-xl border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 cursor-pointer overflow-hidden">
-              <div class="h-2 w-full bg-emerald-500/20 group-hover:bg-emerald-500 transition-colors"></div>
-              <CardHeader class="!pb-2">
+              <div class="h-2 w-full bg-primary/20 group-hover:bg-primary transition-colors"></div>
+              <CardHeader class="!pb-2 !px-5">
                 <div class="flex items-center justify-between">
-                  <CardTitle class="text-2xl font-bold">Earning Zakat</CardTitle>
-                  <Award class="h-6 w-6 text-emerald-500" />
+                  <CardTitle class="text-2xl font-bold">Income Zakat</CardTitle>
+                  <Award class="h-6 w-6 text-primary" />
                 </div>
               </CardHeader>
               <CardContent>
-                <p class="text-muted-foreground !mb-4">Zakat on income or earnings from employment, business, or professions.</p>
-                <div class="flex items-center text-emerald-500 font-semibold group-hover:gap-2 transition-all">
-                  Learn More <span class="!ml-1">→</span>
+                <p class="text-muted-foreground !mb-4 !px-5">Zakat on income or earnings from employment, business, or professions.</p>
+                <div class="flex items-center !px-5 !pb-5 text-primary font-semibold group-hover:gap-2 transition-all">
+                  Learn More <span class="!ml-1 ">→</span>
                 </div>
               </CardContent>
             </Card>
@@ -178,14 +178,14 @@ const steps = ref([
           <AccordionItem value="item-1" class="border-border">
             <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">What types of Zakat can I pay here?</AccordionTrigger>
             <AccordionContent class="text-muted-foreground text-base leading-relaxed !mb-2">
-              Currently, Zakat Chain supports <strong>Fitrah Zakat</strong> (paid during Ramadan) and <strong>Earning Zakat</strong> (paid on income). We use smart contracts to ensure your contributions are distributed transparently and efficiently.
+              Currently, Zakat Chain supports <strong>Fitrah Zakat</strong> (paid during Ramadan) and <strong>Income Zakat</strong> (paid on income). We use smart contracts to ensure your contributions are distributed transparently and efficiently.
             </AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="item-2" class="border-border">
             <AccordionTrigger class="text-left text-lg hover:text-primary !mb-2">How do I calculate my Zakat?</AccordionTrigger>
             <AccordionContent class="text-muted-foreground text-base leading-relaxed !mb-2">
-              You can use our built-in <strong>Zakat Calculator</strong>. For Fitrah Zakat, it uses current rates based on your consumption. For Earning Zakat, it calculates based on your gross income with or without basic deductions (Had Kifayah).
+              You can use our built-in <strong>Zakat Calculator</strong>. For Fitrah Zakat, it uses current rates based on your consumption. For Income Zakat, it calculates based on your gross income with or without basic deductions (Had Kifayah).
             </AccordionContent>
           </AccordionItem>
 

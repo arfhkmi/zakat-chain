@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Users, 
-  BookOpen, 
-  Info, 
-  Scale, 
+import {
+  Users,
+  BookOpen,
+  Info,
+  Scale,
   CheckCircle2,
   Heart,
   Calendar,
-  Waves
+  Waves,
+  RefreshCw
 } from 'lucide-vue-next'
 import {
   Accordion,
@@ -18,24 +19,42 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { getFitrahRate, type FitrahRate } from '../../utils/zakatInteraction'
 
-const rates = ref([
-  {
-    title: 'Standard Rate',
-    price: 'RM 7.00',
-    description: 'Based on the price of local rice commonly consumed by the majority of the population.',
-  },
-  {
-    title: 'Mid-Range Rate',
-    price: 'RM 14.00',
-    description: 'Based on higher quality rice (e.g., Fragrant Rice, Thai Rice).',
-  },
-  {
-    title: 'Premium Rate',
-    price: 'RM 21.00',
-    description: 'Based on premium rice (e.g., Basmathi, Brown Rice).',
+const fitrahRateData = ref<FitrahRate | null>(null)
+const isLoadingRates = ref(false)
+const ratesError = ref<string | null>(null)
+
+const rates = computed(() => {
+  if (!fitrahRateData.value) {
+    return [
+      { title: 'Standard Rate', price: '—', description: 'Based on the price of local rice commonly consumed by the majority of the population.' },
+      { title: 'Mid-Range Rate', price: '—', description: 'Based on higher quality rice (e.g., Fragrant Rice, Thai Rice).' },
+      { title: 'Premium Rate', price: '—', description: 'Based on premium rice (e.g., Basmathi, Brown Rice).' },
+    ]
   }
-])
+  const fmt = (v: number) => `RM ${v.toFixed(2)}`
+  return [
+    { title: 'Standard Rate', price: fmt(fitrahRateData.value.localRate), description: 'Based on the price of local rice commonly consumed by the majority of the population.' },
+    { title: 'Mid-Range Rate', price: fmt(fitrahRateData.value.importRate), description: 'Based on higher quality rice (e.g., Fragrant Rice, Thai Rice).' },
+    { title: 'Premium Rate', price: fmt(fitrahRateData.value.basmathiRate), description: 'Based on premium rice (e.g., Basmathi, Brown Rice).' },
+  ]
+})
+
+const fetchRates = async () => {
+  isLoadingRates.value = true
+  ratesError.value = null
+  try {
+    fitrahRateData.value = await getFitrahRate()
+  } catch (e: any) {
+    ratesError.value = 'Failed to load rates from contract.'
+    console.error(e)
+  } finally {
+    isLoadingRates.value = false
+  }
+}
+
+onMounted(fetchRates)
 
 const conditions = ref([
   'Muslim individual',
@@ -99,12 +118,14 @@ const conditions = ref([
       <section class="!mb-16">
         <h2 class="text-3xl font-bold !mb-8 flex items-center gap-3">
           <Waves class="text-primary w-8 h-8" />
-          Zakat Fitrah Rates (2026 Estimate)
+          Zakat Fitrah Rates
+          <RefreshCw v-if="isLoadingRates" class="w-5 h-5 animate-spin text-primary opacity-60" />
         </h2>
+        <p v-if="ratesError" class="text-sm text-destructive !mb-4">{{ ratesError }}</p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div v-for="rate in rates" :key="rate.title" class="group !p-8 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 hover:border-primary/20 transition-all duration-300 flex flex-col items-center text-center">
             <h3 class="text-xl font-black !mb-3 text-primary">{{ rate.title }}</h3>
-            <span class="text-4xl font-black !mb-4 font-mono">{{ rate.price }}</span>
+            <span :class="['text-4xl font-black !mb-4 font-mono', isLoadingRates ? 'opacity-30' : '']">{{ rate.price }}</span>
             <p class="text-sm text-muted-foreground">{{ rate.description }}</p>
           </div>
         </div>
@@ -158,7 +179,7 @@ const conditions = ref([
       <footer class="text-center !p-12 bg-gradient-to-t from-primary/10 to-transparent rounded-t-3xl border-t border-primary/20">
         <h3 class="text-2xl font-bold !mb-4">Fulfill your Ramadan obligation</h3>
         <p class="text-muted-foreground !mb-8">Use our transparent platform to ensure your Fitrah reaches those in need instantly via blockchain.</p>
-        <RouterLink to="/zakat-calculator?type=fitrah" class="inline-flex items-center justify-center rounded-xl !px-8 !py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95">
+        <RouterLink to="/income-zakat-calculator?type=fitrah" class="inline-flex items-center justify-center rounded-xl !px-8 !py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95">
           Pay Fitrah Now
         </RouterLink>
       </footer>

@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Calculator, 
-  BookOpen, 
-  Info, 
-  Scale, 
-  TrendingUp, 
+import {
+  Calculator,
+  BookOpen,
+  Info,
+  Scale,
+  TrendingUp,
   Coins,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-vue-next'
 import {
   Accordion,
@@ -18,37 +19,73 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { getIncomeInfo, type IncomeInfo } from '../../utils/zakatInteraction'
 
-const methods = ref([
-  {
-    title: 'MODE 1 — Without Deductions (Gross)',
-    description: 'Direct calculation based on your total annual gross income from all sources.',
-    details: 'Simplest method: (Monthly Salary × 12) + Other Income. If the total is >= RM 33,996, you pay 2.5%.',
-    formula: 'Total Annual Income × 2.5%',
-    steps: [
-      'Total Annual Income = (Monthly Salary × 12) + Other Income',
-      'Check if Total >= RM 33,996 (Nisab)',
-      'Zakat = Total × 2.5%'
-    ]
-  },
-  {
-    title: 'MODE 2 — With Deductions (Had Kifayah)',
-    description: 'Calculated on "Eligible Income" after subtracting allowable basic necessities (Had Kifayah).',
-    details: 'This follows specific guidelines for self, family, education, and parents to determine your actual zakat-able wealth.',
-    formula: '(Annual Income - Total Deductions) × 2.5%',
-    deductions: [
-      { label: 'Self Allowance', value: 'RM 12,000 (Fixed)' },
-      { label: 'Wives', value: 'RM 5,000 per wife (Max 4)' },
-      { label: 'Children (<18)', value: 'RM 2,000 per child' },
-      { label: 'Children (18+ Studying)', value: 'RM 5,000 per child' },
-      { label: 'EPF Contributions', value: '11% of annual salary' },
-      { label: 'Parents / Education', value: 'Capped / User entered' }
-    ]
+const incomeInfoData = ref<IncomeInfo | null>(null)
+const isLoadingInfo = ref(false)
+const infoError = ref<string | null>(null)
+
+const fetchIncomeInfo = async () => {
+  isLoadingInfo.value = true
+  infoError.value = null
+  try {
+    incomeInfoData.value = await getIncomeInfo()
+  } catch (e: any) {
+    infoError.value = 'Failed to load income info from contract.'
+    console.error(e)
+  } finally {
+    isLoadingInfo.value = false
   }
-])
+}
 
-const nisabValue = "RM 33,996"
-const zakatRate = "2.5%"
+onMounted(fetchIncomeInfo)
+
+const fmtRM = (v: number) => `RM ${v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+// rate is stored in basis points (250 = 2.5%)
+const zakatRate = computed(() =>
+  incomeInfoData.value ? `${(incomeInfoData.value.rate / 100).toFixed(1)}%` : '2.5%'
+)
+
+const nisabValue = computed(() =>
+  incomeInfoData.value ? fmtRM(incomeInfoData.value.threshold) : '—'
+)
+
+const methods = computed(() => {
+  const info = incomeInfoData.value
+  const nisab = incomeInfoData.value ? fmtRM(incomeInfoData.value.threshold) : 'Nisab'
+  const rate = zakatRate.value
+
+  return [
+    {
+      title: 'MODE 1 — Without Deductions (Gross)',
+      description: 'Direct calculation based on your total annual gross income from all sources.',
+      details: `Simplest method: (Monthly Salary × 12) + Other Income. If the total is >= ${nisab}, you pay ${rate}.`,
+      formula: `Total Annual Income × ${rate}`,
+      steps: [
+        'Total Annual Income = (Monthly Salary × 12) + Other Income',
+        `Check if Total >= ${nisab} (Nisab)`,
+        `Zakat = Total × ${rate}`
+      ],
+      deductions: null,
+    },
+    {
+      title: 'MODE 2 — With Deductions (Had Kifayah)',
+      description: 'Calculated on "Eligible Income" after subtracting allowable basic necessities (Had Kifayah).',
+      details: 'This follows specific guidelines for self, family, education, and parents to determine your actual zakat-able wealth.',
+      formula: `(Annual Income - Total Deductions) × ${rate}`,
+      steps: null,
+      deductions: [
+        { label: 'Self Allowance', value: info ? `${fmtRM(info.selfDeduction)} (Fixed)` : '—' },
+        { label: 'Wives', value: info ? `${fmtRM(info.wifeDeduction)} per wife (Max 4)` : '—' },
+        { label: 'Children (<18)', value: info ? `${fmtRM(info.childMinorDeduction)} per child` : '—' },
+        { label: 'Children (18+ Studying)', value: info ? `${fmtRM(info.childStudyDeduction)} per child` : '—' },
+        { label: 'EPF Contributions', value: '11% of annual salary' },
+        { label: 'Self Education (Max)', value: info ? `${fmtRM(info.studyMaxDeduction)} cap` : '—' },
+      ],
+    }
+  ]
+})
 
 const conditions = ref([
   'Muslim individual',
@@ -67,14 +104,14 @@ const conditions = ref([
         <Badge variant="outline" class="border-primary/50 text-primary !px-4 !py-1 rounded-full !mb-4">
           Education Center
         </Badge>
-        <h1 class="text-4xl md:text-6xl font-black tracking-tight !mb-10">Earning Zakat Info</h1>
+        <h1 class="text-4xl md:text-6xl font-black tracking-tight !mb-10">Income Zakat Info</h1>
         <p class="text-muted-foreground text-lg max-w-2xl !mx-auto">
-          Learn everything you need to know about Earning Zakat (Zakat Pendapatan), 
+          Learn everything you need to know about Income Zakat (Zakat Pendapatan), 
           the religious obligation on your professional income and wealth.
         </p>
       </section>
 
-      <!-- Understanding Earning Zakat -->
+      <!-- Understanding Income Zakat -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 !mb-16">
         <Card class="bg-card/30 backdrop-blur-sm border-white/5 overflow-hidden">
           <CardHeader class="bg-primary/5">
@@ -87,7 +124,7 @@ const conditions = ref([
           </CardHeader>
           <CardContent>
             <p class="text-muted-foreground leading-relaxed !px-2 !mb-6">
-              Earning Zakat is an obligatory contribution (2.5%) for Muslims on income earned through professional work, businesses, or investments, provided it meets the Nisab threshold.
+              Income Zakat is an obligatory contribution (2.5%) for Muslims on income earned through professional work, businesses, or investments, provided it meets the Nisab threshold.
             </p>
           </CardContent>
         </Card>
@@ -103,7 +140,7 @@ const conditions = ref([
           </CardHeader>
           <CardContent>
             <p class="text-muted-foreground leading-relaxed !px-2 !mb-6">
-              The threshold (Nisab) for Earning Zakat is set at <strong>{{ nisabValue }}</strong> per year. If your annual eligible income exceeds this value, zakat of <strong>{{ zakatRate }}</strong> becomes obligatory.
+              The threshold (Nisab) for Income Zakat is set at <strong>{{ nisabValue }}</strong> per year. If your annual eligible income exceeds this value, zakat of <strong>{{ zakatRate }}</strong> becomes obligatory.
             </p>
           </CardContent>
         </Card>
@@ -114,7 +151,9 @@ const conditions = ref([
         <h2 class="text-3xl font-bold !mb-8 flex items-center gap-3">
           <Calculator class="text-primary w-8 h-8" />
           Calculation Modes
+          <RefreshCw v-if="isLoadingInfo" class="w-5 h-5 animate-spin text-primary opacity-60" />
         </h2>
+        <p v-if="infoError" class="text-sm text-destructive !mb-4">{{ infoError }}</p>
         <div class="space-y-8">
           <div v-for="method in methods" :key="method.title" class="group !p-8 !mb-10 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 hover:border-primary/20 transition-all duration-300">
             <h3 class="text-2xl font-black !mb-3 text-primary">{{ method.title }}</h3>
@@ -193,7 +232,7 @@ const conditions = ref([
       <footer class="text-center !p-12 bg-gradient-to-t from-primary/10 to-transparent rounded-t-3xl border-t border-primary/20">
         <h3 class="text-2xl font-bold !mb-4">Ready to fulfill your obligation?</h3>
         <p class="text-muted-foreground !mb-8">Join thousands of others using the blockchain for a more transparent future of giving.</p>
-        <RouterLink to="/zakat-calculator" class="inline-flex items-center justify-center rounded-xl !px-8 !py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95">
+        <RouterLink to="/income-zakat-calculator" class="inline-flex items-center justify-center rounded-xl !px-8 !py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95">
           Pay Zakat Now
         </RouterLink>
       </footer>

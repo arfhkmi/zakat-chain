@@ -40,7 +40,7 @@ enum IncomeType {
   ANNUAL = 'ANNUAL',
 }
 
-type Step = 'FORM' | 'RESULT' | 'PROCESSING' | 'SUCCESS'
+type Step = 'FORM' | 'RESULT' | 'NIYYAH' | 'PROCESSING' | 'SUCCESS'
 
 interface DeductionBreakdown {
   selfAllowance: number;
@@ -229,14 +229,23 @@ watch(() => account.value.isConnected, (connected) => {
 <template>
   <div class="min-h-screen bg-background text-foreground !py-12 !px-4 sm:!px-6 lg:!px-8 flex flex-col items-center justify-center">
     <div class="max-w-4xl mx-auto !mb-50">
-      
+
+      <!-- Back Button (Step 1 only) -->
+      <div v-if="currentStep === 'FORM'" class="flex justify-end !mb-4">
+        <RouterLink to="/pay-zakat" class="flex items-center gap-2 !px-5 !py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-primary/40 text-sm font-bold transition-all">
+          <ChevronLeft class="w-4 h-4" /> Back
+        </RouterLink>
+      </div>
+
       <!-- Stepper Indicator -->
       <div v-if="currentStep !== 'SUCCESS'" class="flex items-center justify-center gap-4 !mb-12 animate-in fade-in duration-500">
         <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all', currentStep === 'FORM' ? 'bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 'bg-white/10 text-muted-foreground']">1</div>
         <div class="w-12 h-0.5 bg-white/10"></div>
         <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all', currentStep === 'RESULT' ? 'bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 'bg-white/10 text-muted-foreground']">2</div>
         <div class="w-12 h-0.5 bg-white/10"></div>
-        <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all', currentStep === 'PROCESSING' ? 'bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 'bg-white/10 text-muted-foreground']">3</div>
+        <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all', currentStep === 'NIYYAH' ? 'bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 'bg-white/10 text-muted-foreground']">3</div>
+        <div class="w-12 h-0.5 bg-white/10"></div>
+        <div :class="['w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all', currentStep === 'PROCESSING' ? 'bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20' : 'bg-white/10 text-muted-foreground']">4</div>
       </div>
 
       <!-- Step 1: Form -->
@@ -246,7 +255,7 @@ watch(() => account.value.isConnected, (connected) => {
             Step 1: Evaluation
           </Badge>
           <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl !mb-4">
-            Calculate <span class="text-primary">Earning Zakat</span>
+            Calculate <span class="text-primary">Income Zakat</span>
           </h1>
           <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
             Fill in your income details to determine your obligation.
@@ -521,20 +530,62 @@ watch(() => account.value.isConnected, (connected) => {
                   </CardContent>
                </Card>
 
-               <Button 
+               <Button
                   v-if="result.isEligible"
-                  @click="handlePayment"
-                  class="w-full  h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest shadow-xl shadow-primary/30 rounded-sm group transition-all"
+                  @click="account.isConnected ? (currentStep = 'NIYYAH') : open()"
+                  class="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest shadow-xl shadow-primary/30 rounded-sm group transition-all"
                >
-                  <component :is="account.isConnected ? Wallet : ShieldCheck" class="w-6 h-6 !mr-3 group-hover:scale-110 transition-transform" />
-                  {{ account.isConnected ? 'Pay with Wallet' : 'Connect to Pay' }}
+                  <component :is="account.isConnected ? ArrowRight : ShieldCheck" class="w-6 h-6 !mr-3 group-hover:scale-110 transition-transform" />
+                  {{ account.isConnected ? 'Proceed to Niyyah' : 'Connect to Pay' }}
                </Button>
                <Button v-else variant="outline" @click="resetForm" class="w-full h-8 rounded-sm font-bold uppercase tracking-widest">Back to Start</Button>
             </div>
          </div>
       </div>
 
-      <!-- Step 3: Processing -->
+      <!-- Step 3: Niyyah -->
+      <div v-if="currentStep === 'NIYYAH'" class="animate-in fade-in slide-in-from-right-8 duration-700">
+        <button @click="currentStep = 'RESULT'" class="flex items-center gap-2 text-muted-foreground hover:text-primary !mb-8 transition-colors">
+          <ChevronLeft class="w-5 h-5" /> Back to Summary
+        </button>
+
+        <div class="text-center !mb-10">
+          <Badge variant="outline" class="!mb-4 border-primary/50 text-primary !px-4 !py-1 rounded-full">
+            Step 3: Niyyah
+          </Badge>
+          <h1 class="text-4xl font-extrabold tracking-tight !mb-3">
+            Recite <span class="text-primary">Niyyah</span>
+          </h1>
+          <p class="text-muted-foreground">Read the intention for your Income Zakat before confirming payment.</p>
+        </div>
+
+        <Card class="bg-card/50 backdrop-blur-xl border-white/5 shadow-2xl overflow-hidden !mb-8">
+          <div class="h-1 w-full bg-primary"></div>
+          <CardContent class="!p-8 flex flex-col gap-4">
+            <p class="text-xs font-black uppercase tracking-widest text-primary opacity-70">Niyyah — Zakat Al-Mal (Pendapatan)</p>
+            <p class="text-2xl font-bold text-right leading-loose" dir="rtl">
+              نَوَيْتُ أَنْ أُخْرِجَ زَكَاةَ الْمَالِ فَرْضًا لِلّٰهِ تَعَالَى
+            </p>
+            <p class="text-sm text-primary font-medium italic">
+              "Nawaitu an ukhrija zakatadz maali fardhan lillahi taala"
+            </p>
+            <p class="text-sm text-muted-foreground leading-relaxed">
+              "I intend to give zakat on my wealth, as an obligation to Allah, the Almighty."
+            </p>
+          </CardContent>
+        </Card>
+
+        <Button
+          @click="handlePayment"
+          :disabled="isLoading"
+          class="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-lg shadow-xl shadow-primary/20 rounded-2xl"
+        >
+          <Wallet class="w-5 h-5 !mr-2" />
+          Confirm &amp; Pay
+        </Button>
+      </div>
+
+      <!-- Step 4: Processing -->
       <div v-if="currentStep === 'PROCESSING'" class="animate-in fade-in zoom-in duration-500 flex flex-col items-center justify-center !py-20 text-center">
          <div class="relative w-32 h-32 !mb-10">
             <div class="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
@@ -580,7 +631,7 @@ watch(() => account.value.isConnected, (connected) => {
                   <div class="grid grid-cols-2 gap-12 !mb-5">
                      <div class="text-left space-y-2">
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-40">Payment Type</p>
-                        <p class="text-lg font-bold">Earning Zakat (Pendapatan)</p>
+                        <p class="text-lg font-bold">Income Zakat (Pendapatan)</p>
                      </div>
                      <div class="text-left space-y-2">
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-40">Payer Address</p>

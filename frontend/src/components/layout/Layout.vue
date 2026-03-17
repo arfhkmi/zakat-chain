@@ -81,7 +81,7 @@ const footerLinks = {
   quickLinks: [
     { name: 'Main', path: '/' },
     { name: 'About Us', path: '/about-us' },
-    { name: 'Earning Zakat Info', path: '/earning-zakat-info' },
+    { name: 'Income Zakat Info', path: '/income-zakat-info' },
     { name: 'Fitrah Zakat Info', path: '/fitrah-zakat-info' },
   ]
 }
@@ -129,9 +129,9 @@ const footerLinks = {
               class="absolute top-full -left-4 w-56 !pt-4 animate-in fade-in slide-in-from-top-2 duration-200"
             >
               <div class="bg-card border border-white/5 rounded-xl shadow-2xl overflow-hidden !p-2 backdrop-blur-xl">
-                <RouterLink to="/earning-zakat-info" class="flex items-center gap-3 !px-4 !py-3 rounded-lg hover:bg-white/5 transition-colors">
+                <RouterLink to="/income-zakat-info" class="flex items-center gap-3 !px-4 !py-3 rounded-lg hover:bg-white/5 transition-colors">
                   <BookOpen class="w-4 h-4 text-primary" />
-                  <span class="text-xs font-bold">Earning Zakat Info</span>
+                  <span class="text-xs font-bold">Income Zakat Info</span>
                 </RouterLink>
                 <RouterLink to="/fitrah-zakat-info" class="flex items-center gap-3 !px-4 !py-3 rounded-lg hover:bg-white/5 transition-colors">
                   <Heart class="w-4 h-4 text-primary" />
@@ -178,8 +178,8 @@ const footerLinks = {
           </div>
         </RouterLink>
 
-        <RouterLink to="/earning-zakat-info" @click="isMobileMenuOpen = false" exact-active-class="!text-primary" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
-          <span>Earning Zakat</span>
+        <RouterLink to="/income-zakat-info" @click="isMobileMenuOpen = false" exact-active-class="!text-primary" class="group flex items-center gap-5 text-lg font-black text-foreground hover:text-primary transition-all cursor-pointer">
+          <span>Income Zakat</span>
           <div class="w-12 h-12 rounded-2xl !my-2 bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/30 transition-all duration-300">
             <BookOpen class="w-6 h-6 text-primary" />
           </div>
