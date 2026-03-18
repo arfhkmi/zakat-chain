@@ -21,8 +21,8 @@ import muniifImg from '@/assets/image/mudaar-tech/muniff-pp.webp'
 const team = ref([
   {
     name: 'Arief Hakimi',
-    role: 'Contract Developer',
-    description: 'Expert in Smart Contract security and Solidity development.',
+    role: 'Blockchain Developer',
+    description: 'Architected and deployed the ZakatChain smart contract on BSC Testnet, handling on-chain zakat payments, rate management, and fund collection.',
     icon: Code2,
     image: ariefImg,
     linkedin: 'https://www.linkedin.com/in/ariefhakimimohdazdi/',
@@ -30,8 +30,8 @@ const team = ref([
   },
   {
     name: 'Danish Fikri',
-    role: 'Frontend Developer',
-    description: 'Specializing in reactive UI/UX and modern frontend architectures.',
+    role: 'Frontend Developer & Scrum Master',
+    description: 'Built the ZakatChain frontend with Vue 3 and TypeScript, integrating Web3 wallet connections, zakat calculators, and the admin dashboard.',
     icon: Layout,
     image: danishImg,
     linkedin: 'https://www.linkedin.com/in/danish-fikri-546119299/',
