@@ -42,6 +42,10 @@ A blockchain-based Zakat payment platform built for transparency and trust. Zaka
 2. Install dependencies:
    ```bash
    npm i
+
+   #First-timer
+   copy .env.example
+   paste as .env
    ```
 3. Start the application:
    ```bash

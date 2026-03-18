@@ -1,17 +1,49 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
-import { ShieldCheck, LogOut, RefreshCw } from 'lucide-vue-next'
+import { ShieldCheck, LogOut, Wallet } from 'lucide-vue-next'
+import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/vue'
 
 const router = useRouter()
-const isLoading = ref(false)
+
+const { open } = useAppKit()
+const account = useAppKitAccount()
+const { walletProvider } = useAppKitProvider<any>('eip155')
+
+const BSC_TESTNET = {
+  chainId: '0x61',
+  chainName: 'BNB Smart Chain Testnet',
+  nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 },
+  rpcUrls: [
+    import.meta.env.VITE_BNB_RPC_NODE_1,
+    import.meta.env.VITE_BNB_RPC_NODE_2,
+    import.meta.env.VITE_BNB_RPC_NODE_3,
+  ].filter(Boolean),
+  blockExplorerUrls: ['https://testnet.bscscan.com'],
+}
+
+watch(
+  () => account.value?.isConnected,
+  async (isConnected) => {
+    const provider = walletProvider?.value as any
+    if (isConnected && provider) {
+      try {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [BSC_TESTNET],
+        })
+      } catch (err: any) {
+        console.warn('Could not switch to BSC Testnet:', err?.message)
+      }
+    }
+  }
+)
 
 const handleLogout = () => {
   localStorage.removeItem('admin_auth')
   router.push('/admin/login')
 }
-
 </script>
 
 <template>
@@ -29,7 +61,16 @@ const handleLogout = () => {
           </div>
         </div>
         
-        <div class="flex items-center !gap-4">
+        <div class="flex items-center !gap-3">
+          <button
+            @click="open()"
+            class="flex items-center gap-2 !px-3 !py-2 bg-primary/10 border border-primary/30 text-primary font-bold text-sm rounded-lg hover:bg-primary/20 hover:border-primary/50 transition-all active:scale-95"
+          >
+            <Wallet class="w-4 h-4 shrink-0" />
+            <span>
+              {{ account?.isConnected ? (account.address ? account.address.slice(0, 6) + '...' + account.address.slice(-4) : 'Connected') : 'Connect Wallet' }}
+            </span>
+          </button>
           <Button variant="destructive" size="sm" class="!px-2 !gap-2" @click="handleLogout">
             <LogOut class="w-4 h-4" />
             <span class="hidden sm:inline">Logout</span>

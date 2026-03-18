@@ -34,7 +34,11 @@ const BSC_TESTNET = {
   chainId: '0x61',
   chainName: 'BNB Smart Chain Testnet',
   nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 },
-  rpcUrls: ['https://bsc-testnet.publicnode.com'],
+  rpcUrls: [
+    import.meta.env.VITE_BNB_RPC_NODE_1,
+    import.meta.env.VITE_BNB_RPC_NODE_2,
+    import.meta.env.VITE_BNB_RPC_NODE_3,
+  ].filter(Boolean),
   blockExplorerUrls: ['https://testnet.bscscan.com'],
 }
 

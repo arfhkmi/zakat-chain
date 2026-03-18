@@ -63,7 +63,7 @@ onMounted(async () => {
 const selectedRateInfo = computed(() => RATE_TYPES[selectedRateType.value])
 
 const ratePerPerson = computed(() => {
-  if (!fitrahRateData.value) return 0
+  if (!fitrahRateData.value || !selectedRateInfo.value) return 0
   return fitrahRateData.value[selectedRateInfo.value.key] as number
 })
 
@@ -82,7 +82,9 @@ const handlePayment = async () => {
     isLoading.value = true
     currentStep.value = 'PROCESSING'
 
-    const provider = new BrowserProvider(walletProvider.value)
+    const rawProvider = walletProvider?.value
+    if (!rawProvider) throw new Error('Wallet provider not available')
+    const provider = new BrowserProvider(rawProvider)
     const signer = await provider.getSigner()
     const contract = new Contract(ZAKAT_CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
 
@@ -379,7 +381,7 @@ const handlePayment = async () => {
                 </div>
                 <div>
                   <p class="text-[10px] font-black uppercase tracking-widest opacity-40 !mb-1">Category</p>
-                  <p class="font-bold">{{ RATE_TYPES[selectedRateType].label }}</p>
+                  <p class="font-bold">{{ RATE_TYPES[selectedRateType]?.label }}</p>
                 </div>
                 <div>
                   <p class="text-[10px] font-black uppercase tracking-widest opacity-40 !mb-1">No. of People</p>
@@ -387,7 +389,7 @@ const handlePayment = async () => {
                 </div>
                 <div>
                   <p class="text-[10px] font-black uppercase tracking-widest opacity-40 !mb-1">Payer</p>
-                  <p class="text-xs font-mono break-all opacity-80">{{ account.value?.address }}</p>
+                  <p class="text-xs font-mono break-all opacity-80">{{ account?.address }}</p>
                 </div>
               </div>
 

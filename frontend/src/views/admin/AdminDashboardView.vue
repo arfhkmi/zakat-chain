@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { useRouter } from 'vue-router'
-import { ethers } from 'ethers'
+import { formatUnits } from 'ethers'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -23,10 +23,17 @@ import {
   CircleDollarSign,
   Percent
 } from 'lucide-vue-next'
-import zakatAbi from '../../../utils/abi/zakatAbi.json'
-import tokenAbi from '../../../utils/abi/tokenAbi.json'
 import { useSwal } from '../../../utils/useSwal'
-import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/vue'
+import { useAppKitProvider } from '@reown/appkit/vue'
+import {
+  getSigner,
+  getAdminContractData,
+  getTokenInfo,
+  adminChangeCollector,
+  adminCollectFunds,
+  adminUpdateFitrahRates,
+  adminUpdateIncomeInfo,
+} from '../../../utils/zakatInteraction'
 
 const router = useRouter()
 const contractAddress = import.meta.env.VITE_ZAKAT_CONTRACT_ADDRESS
@@ -36,8 +43,6 @@ const isUpdating = ref(false)
 const adminAuth = ref(localStorage.getItem('admin_auth') === 'true')
 
 const { handleSuccess, handleError, handleLoading } = useSwal()
-const { open } = useAppKit()
-const account = useAppKitAccount()
 const { walletProvider } = useAppKitProvider<any>('eip155')
 
 const tokenInfo = ref({ symbol: '...', decimals: 18 })
@@ -78,7 +83,7 @@ const checkAuth = () => {
 
 const formatToken = (val: any) => {
   try {
-    const num = parseFloat(ethers.formatUnits(val.toString(), tokenInfo.value.decimals))
+    const num = parseFloat(formatUnits(val.toString(), tokenInfo.value.decimals))
     return num.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   } catch {
     return '0'
@@ -104,59 +109,26 @@ const formatRate = (val: any) => {
 const fetchData = async () => {
   try {
     isLoading.value = true
-    const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_BNB_RPC_NODE)
-    const contract = new ethers.Contract(contractAddress, zakatAbi, provider) as any
+    const data = await getAdminContractData()
+    const token = await getTokenInfo(data.paymentToken)
+    tokenInfo.value = token
+    contractData.value = data
+    newCollector.value = data.collector
 
-    const [owner, collector, paymentToken, fRate, fSummary, iInfo, iSummary] = await Promise.all([
-      contract.owner(),
-      contract.collector(),
-      contract.paymentToken(),
-      contract.fitrahRate(),
-      contract.fitrahSummary(),
-      contract.incomeInfo(),
-      contract.incomeSummary()
-    ])
-
-    const tokenContract = new ethers.Contract(paymentToken, tokenAbi, provider) as any
-    const [tokenSymbol, tokenDecimals] = await Promise.all([
-      tokenContract.symbol(),
-      tokenContract.decimals()
-    ])
-    tokenInfo.value = { symbol: tokenSymbol, decimals: Number(tokenDecimals) }
-
-    contractData.value = {
-      owner,
-      collector,
-      paymentToken,
-      fitrahRate: { localRate: fRate.localRate, importRate: fRate.importRate, basmathiRate: fRate.basmathiRate },
-      fitrahSummary: { count: fSummary.count, balance: fSummary.balance, total: fSummary.total },
-      incomeInfo: {
-        rate: iInfo.rate,
-        threshold: iInfo.threshold,
-        selfDeduction: iInfo.selfDeduction,
-        wifeDeduction: iInfo.wifeDeduction,
-        childMinorDeduction: iInfo.childMinorDeduction,
-        childStudyDeduction: iInfo.childStudyDeduction,
-        studyMaxDeduction: iInfo.studyMaxDeduction
-      },
-      incomeSummary: { count: iSummary.count, balance: iSummary.balance, total: iSummary.total }
-    }
-
-    newCollector.value = collector
-    const dec = tokenInfo.value.decimals
+    const dec = token.decimals
     newFitrahRates.value = {
-      localRate: ethers.formatUnits(fRate.localRate, dec),
-      importRate: ethers.formatUnits(fRate.importRate, dec),
-      basmathiRate: ethers.formatUnits(fRate.basmathiRate, dec)
+      localRate: formatUnits(data.fitrahRate.localRate, dec),
+      importRate: formatUnits(data.fitrahRate.importRate, dec),
+      basmathiRate: formatUnits(data.fitrahRate.basmathiRate, dec),
     }
     newIncomeInfo.value = {
-      rate: (Number(iInfo.rate) / 100).toString(),
-      threshold: ethers.formatUnits(iInfo.threshold, dec),
-      selfDeduction: ethers.formatUnits(iInfo.selfDeduction, dec),
-      wifeDeduction: ethers.formatUnits(iInfo.wifeDeduction, dec),
-      childMinorDeduction: ethers.formatUnits(iInfo.childMinorDeduction, dec),
-      childStudyDeduction: ethers.formatUnits(iInfo.childStudyDeduction, dec),
-      studyMaxDeduction: ethers.formatUnits(iInfo.studyMaxDeduction, dec)
+      rate: (Number(data.incomeInfo.rate) / 100).toString(),
+      threshold: formatUnits(data.incomeInfo.threshold, dec),
+      selfDeduction: formatUnits(data.incomeInfo.selfDeduction, dec),
+      wifeDeduction: formatUnits(data.incomeInfo.wifeDeduction, dec),
+      childMinorDeduction: formatUnits(data.incomeInfo.childMinorDeduction, dec),
+      childStudyDeduction: formatUnits(data.incomeInfo.childStudyDeduction, dec),
+      studyMaxDeduction: formatUnits(data.incomeInfo.studyMaxDeduction, dec),
     }
   } catch (error) {
     handleError(error, 'Fetch Error')
@@ -165,19 +137,11 @@ const fetchData = async () => {
   }
 }
 
-async function getSigner() {
-  const currentProvider = walletProvider.value || window.ethereum
-  if (!currentProvider) { open(); throw new Error('Please connect your wallet') }
-  const provider = new ethers.BrowserProvider(currentProvider as any)
-  return await provider.getSigner()
-}
-
 const updateCollector = async () => {
   try {
     isUpdating.value = true
-    const signer = await getSigner()
-    const contract = new ethers.Contract(contractAddress, zakatAbi, signer) as any
-    const tx = await contract.changeCollector(newCollector.value)
+    const signer = await getSigner(walletProvider?.value)
+    const tx = await adminChangeCollector(signer, newCollector.value)
     handleLoading('Transferring Role', 'Please confirm in your wallet')
     await tx.wait()
     handleSuccess('Role Transferred', 'Collector updated successfully')
@@ -188,9 +152,8 @@ const updateCollector = async () => {
 const collectFunds = async (isFitrah: boolean) => {
   try {
     isUpdating.value = true
-    const signer = await getSigner()
-    const contract = new ethers.Contract(contractAddress, zakatAbi, signer) as any
-    const tx = await contract.collect(isFitrah)
+    const signer = await getSigner(walletProvider?.value)
+    const tx = await adminCollectFunds(signer, isFitrah)
     handleLoading('Collecting Funds', 'Waiting for confirmation')
     await tx.wait()
     handleSuccess('Funds Collected', 'Zakat transferred to the collector')
@@ -201,14 +164,8 @@ const collectFunds = async (isFitrah: boolean) => {
 const saveFitrahRates = async () => {
   try {
     isUpdating.value = true
-    const signer = await getSigner()
-    const contract = new ethers.Contract(contractAddress, zakatAbi, signer) as any
-    const dec = tokenInfo.value.decimals
-    const tx = await contract.updateFitrahRates({
-      localRate: ethers.parseUnits(newFitrahRates.value.localRate, dec),
-      importRate: ethers.parseUnits(newFitrahRates.value.importRate, dec),
-      basmathiRate: ethers.parseUnits(newFitrahRates.value.basmathiRate, dec)
-    })
+    const signer = await getSigner(walletProvider?.value)
+    const tx = await adminUpdateFitrahRates(signer, newFitrahRates.value, tokenInfo.value.decimals)
     handleLoading('Updating Rates', 'Applying to contract')
     await tx.wait()
     handleSuccess('Rates Updated', 'Fitrah rates have been updated')
@@ -219,18 +176,8 @@ const saveFitrahRates = async () => {
 const saveIncomeInfo = async () => {
   try {
     isUpdating.value = true
-    const signer = await getSigner()
-    const contract = new ethers.Contract(contractAddress, zakatAbi, signer) as any
-    const dec = tokenInfo.value.decimals
-    const tx = await contract.updateIncomeInfo({
-      rate: BigInt(Math.round(Number(newIncomeInfo.value.rate) * 100)),
-      threshold: ethers.parseUnits(newIncomeInfo.value.threshold, dec),
-      selfDeduction: ethers.parseUnits(newIncomeInfo.value.selfDeduction, dec),
-      wifeDeduction: ethers.parseUnits(newIncomeInfo.value.wifeDeduction, dec),
-      childMinorDeduction: ethers.parseUnits(newIncomeInfo.value.childMinorDeduction, dec),
-      childStudyDeduction: ethers.parseUnits(newIncomeInfo.value.childStudyDeduction, dec),
-      studyMaxDeduction: ethers.parseUnits(newIncomeInfo.value.studyMaxDeduction, dec)
-    })
+    const signer = await getSigner(walletProvider?.value)
+    const tx = await adminUpdateIncomeInfo(signer, newIncomeInfo.value, tokenInfo.value.decimals)
     handleLoading('Updating Matrix', 'Applying income parameters')
     await tx.wait()
     handleSuccess('Matrix Updated', 'Income zakat parameters updated')
@@ -716,7 +663,7 @@ onUnmounted(() => {
                 </div>
                 <div class="!space-y-1.5">
                   <Label class="text-slate-400 text-xs">Transfer to new address</Label>
-                  <Input v-model="newCollector" placeholder="0x..." class="bg-slate-950 border-slate-700 text-sm font-mono" />
+                  <Input v-model="newCollector" placeholder="0x..." class="!px-2 bg-slate-950 border-slate-700 text-sm font-mono" />
                 </div>
                 <Button class="w-full !gap-2 border border-emerald-500/30 text-emerald-400 bg-emerald-600/10 hover:bg-emerald-600/20 transition-colors" variant="ghost" @click="updateCollector" :disabled="isUpdating">
                   <CheckCircle2 class="w-4 h-4" />

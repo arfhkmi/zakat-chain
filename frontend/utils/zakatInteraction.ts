@@ -1,15 +1,33 @@
-import { JsonRpcProvider, Contract, formatUnits } from 'ethers'
+import { JsonRpcProvider, FallbackProvider, BrowserProvider, Contract, formatUnits, parseUnits } from 'ethers'
+import type { Signer } from 'ethers'
 import ZAKAT_ABI from './abi/zakatAbi.json'
+import TOKEN_ABI from './abi/tokenAbi.json'
 
-const RPC_URL = import.meta.env.VITE_BNB_RPC_NODE || ''
 const CONTRACT_ADDRESS = import.meta.env.VITE_ZAKAT_CONTRACT_ADDRESS || ''
-
 const TOKEN_DECIMALS = 18
 
-function getReadContract() {
-  const provider = new JsonRpcProvider(RPC_URL)
-  return new Contract(CONTRACT_ADDRESS, ZAKAT_ABI, provider)
+// ── Provider ──────────────────────────────────────────────────────────────────
+
+function getFallbackProvider() {
+  const urls: string[] = [
+    import.meta.env.VITE_BNB_RPC_NODE_1,
+    import.meta.env.VITE_BNB_RPC_NODE_2,
+    import.meta.env.VITE_BNB_RPC_NODE_3,
+  ].filter(Boolean)
+  return new FallbackProvider(urls.map(url => new JsonRpcProvider(url)))
 }
+
+function getReadContract() {
+  return new Contract(CONTRACT_ADDRESS, ZAKAT_ABI, getFallbackProvider()) as any
+}
+
+export async function getSigner(rawWalletProvider: any): Promise<Signer> {
+  const p = rawWalletProvider ?? (window as any).ethereum
+  if (!p) throw new Error('Please connect your wallet')
+  return new BrowserProvider(p as any).getSigner()
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface FitrahRate {
   localRate: number   // RM equivalent of localRate
@@ -26,6 +44,31 @@ export interface IncomeInfo {
   childStudyDeduction: number    // per studying child deduction in RM
   studyMaxDeduction: number      // max self study deduction in RM
 }
+
+export interface AdminContractData {
+  owner: string
+  collector: string
+  paymentToken: string
+  fitrahRate: { localRate: bigint; importRate: bigint; basmathiRate: bigint }
+  fitrahSummary: { count: bigint; balance: bigint; total: bigint }
+  incomeInfo: {
+    rate: bigint
+    threshold: bigint
+    selfDeduction: bigint
+    wifeDeduction: bigint
+    childMinorDeduction: bigint
+    childStudyDeduction: bigint
+    studyMaxDeduction: bigint
+  }
+  incomeSummary: { count: bigint; balance: bigint; total: bigint }
+}
+
+export interface TokenInfo {
+  symbol: string
+  decimals: number
+}
+
+// ── Public read ───────────────────────────────────────────────────────────────
 
 export async function getFitrahRate(): Promise<FitrahRate> {
   const contract = getReadContract()
@@ -49,4 +92,93 @@ export async function getIncomeInfo(): Promise<IncomeInfo> {
     childStudyDeduction: Number(formatUnits(result.childStudyDeduction, TOKEN_DECIMALS)),
     studyMaxDeduction: Number(formatUnits(result.studyMaxDeduction, TOKEN_DECIMALS)),
   }
+}
+
+// ── Admin read ────────────────────────────────────────────────────────────────
+
+export async function getAdminContractData(): Promise<AdminContractData> {
+  const contract = getReadContract()
+  const [owner, collector, paymentToken, fRate, fSummary, iInfo, iSummary] = await Promise.all([
+    contract.owner(),
+    contract.collector(),
+    contract.paymentToken(),
+    contract.fitrahRate(),
+    contract.fitrahSummary(),
+    contract.incomeInfo(),
+    contract.incomeSummary(),
+  ])
+  return {
+    owner,
+    collector,
+    paymentToken,
+    fitrahRate: { localRate: fRate.localRate, importRate: fRate.importRate, basmathiRate: fRate.basmathiRate },
+    fitrahSummary: { count: fSummary.count, balance: fSummary.balance, total: fSummary.total },
+    incomeInfo: {
+      rate: iInfo.rate,
+      threshold: iInfo.threshold,
+      selfDeduction: iInfo.selfDeduction,
+      wifeDeduction: iInfo.wifeDeduction,
+      childMinorDeduction: iInfo.childMinorDeduction,
+      childStudyDeduction: iInfo.childStudyDeduction,
+      studyMaxDeduction: iInfo.studyMaxDeduction,
+    },
+    incomeSummary: { count: iSummary.count, balance: iSummary.balance, total: iSummary.total },
+  }
+}
+
+export async function getTokenInfo(tokenAddress: string): Promise<TokenInfo> {
+  const provider = getFallbackProvider()
+  const tokenContract = new Contract(tokenAddress, TOKEN_ABI, provider) as any
+  const [symbol, decimals] = await Promise.all([tokenContract.symbol(), tokenContract.decimals()])
+  return { symbol, decimals: Number(decimals) }
+}
+
+// ── Admin write ───────────────────────────────────────────────────────────────
+
+export async function adminChangeCollector(signer: Signer, collectorAddress: string) {
+  const contract = new Contract(CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
+  return contract.changeCollector(collectorAddress)
+}
+
+export async function adminCollectFunds(signer: Signer, isFitrah: boolean) {
+  const contract = new Contract(CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
+  return contract.collect(isFitrah)
+}
+
+export async function adminUpdateFitrahRates(
+  signer: Signer,
+  rates: { localRate: string; importRate: string; basmathiRate: string },
+  decimals: number
+) {
+  const contract = new Contract(CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
+  return contract.updateFitrahRates({
+    localRate: parseUnits(rates.localRate, decimals),
+    importRate: parseUnits(rates.importRate, decimals),
+    basmathiRate: parseUnits(rates.basmathiRate, decimals),
+  })
+}
+
+export async function adminUpdateIncomeInfo(
+  signer: Signer,
+  info: {
+    rate: string
+    threshold: string
+    selfDeduction: string
+    wifeDeduction: string
+    childMinorDeduction: string
+    childStudyDeduction: string
+    studyMaxDeduction: string
+  },
+  decimals: number
+) {
+  const contract = new Contract(CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
+  return contract.updateIncomeInfo({
+    rate: BigInt(Math.round(Number(info.rate) * 100)),
+    threshold: parseUnits(info.threshold, decimals),
+    selfDeduction: parseUnits(info.selfDeduction, decimals),
+    wifeDeduction: parseUnits(info.wifeDeduction, decimals),
+    childMinorDeduction: parseUnits(info.childMinorDeduction, decimals),
+    childStudyDeduction: parseUnits(info.childStudyDeduction, decimals),
+    studyMaxDeduction: parseUnits(info.studyMaxDeduction, decimals),
+  })
 }
