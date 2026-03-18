@@ -296,7 +296,7 @@ const handlePayment = async () => {
         <div class="space-y-6 !mb-8">
 
           <!-- Niyyah for yourself -->
-          <Card class="!mb-10 bg-card/50 backdrop-blur-xl border-white/5 shadow-2xl overflow-hidden">
+          <Card v-if="count === 1" class="mb-10! bg-card/50 backdrop-blur-xl border-white/5 shadow-2xl overflow-hidden">
             <div class="h-1 w-full bg-primary/50"></div>
             <CardContent class="!p-8 flex flex-col gap-4">
               <p class="text-xs font-black uppercase tracking-widest text-primary opacity-70">For Yourself Only</p>
@@ -313,7 +313,7 @@ const handlePayment = async () => {
           </Card>
 
           <!-- Niyyah for yourself and family -->
-          <Card class="bg-card/50 backdrop-blur-xl border-white/5 shadow-2xl overflow-hidden">
+          <Card v-if="count > 1" class="bg-card/50 backdrop-blur-xl border-white/5 shadow-2xl overflow-hidden">
             <div class="h-1 w-full bg-primary"></div>
             <CardContent class="!p-8 flex flex-col gap-4">
               <p class="text-xs font-black uppercase tracking-widest text-primary opacity-70">For Yourself &amp; Family</p>
