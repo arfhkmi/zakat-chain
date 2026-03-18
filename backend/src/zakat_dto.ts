@@ -13,7 +13,7 @@ export enum IncomeType {
 // ---------------------------------------------------------------------------
 export class WithoutDeductions {
   /** User picks MONTHLY or ANNUAL, then fills one of the two fields below */
-  incomeType: IncomeType;
+  incomeType!: IncomeType;
 
   /** Required when incomeType = MONTHLY */
   monthlyIncome?: number;
@@ -33,38 +33,56 @@ export class WithoutDeductions {
 // ---------------------------------------------------------------------------
 export class Deductions {
   /** Number of wives, RM 5,000 each, max 4 */
-  numberOfWives: number;
+  numberOfWives!: number;
 
   /** Number of children under 18, RM 2,000 each */
-  numberOfChildrenUnder18: number;
+  numberOfChildrenUnder18!: number;
 
   /** Number of children 18+ studying, RM 5,000 each */
-  numberOfChildrenAbove18Studying: number;
+  numberOfChildrenAbove18Studying!: number;
 
   /** Parents expenses - free-form, user enters own amount */
-  parentExpenses: number;
+  parentExpenses!: number;
 
   /** EPF deduction percentage (e.g. 11 for 11%), applied on gross annual salary */
-  epfPercentage: number;
+  epfPercentage!: number;
 
-  /** Self-education expenses, capped at RM 2,000/year */
-  selfEducationExpenses: number;
+  /** Self-education expenses, capped at studyMaxDeduction */
+  selfEducationExpenses!: number;
 }
 
 export class WithDeductions {
-  incomeType: IncomeType;
+  incomeType!: IncomeType;
   monthlyIncome?: number;
   annualIncome?: number;
   otherIncome?: number;
   zakatContribution?: number;
-  deductions: Deductions;
+  deductions!: Deductions;
+}
+
+// ---------------------------------------------------------------------------
+// Rates from contract incomeInfo()
+// ---------------------------------------------------------------------------
+export class IncomeRates {
+  /** Zakat rate in basis points (e.g. 250 = 2.5%) */
+  rate!: number;
+  /** Nisab threshold in RM */
+  threshold!: number;
+  selfDeduction!: number;
+  wifeDeduction!: number;
+  childMinorDeduction!: number;
+  childStudyDeduction!: number;
+  studyMaxDeduction!: number;
 }
 
 // ---------------------------------------------------------------------------
 // Main request DTO
 // ---------------------------------------------------------------------------
 export class ZakatRequestDto {
-  calculationType: CalculationType;
+  calculationType!: CalculationType;
+
+  /** Rates fetched from the contract incomeInfo() */
+  rates!: IncomeRates;
 
   /** Populate when calculationType = WITHOUT_DEDUCTIONS */
   withoutDeductions?: WithoutDeductions;

@@ -1,4 +1,4 @@
-import { JsonRpcProvider, FallbackProvider, BrowserProvider, Contract, formatUnits, parseUnits } from 'ethers'
+import { JsonRpcProvider, FallbackProvider, BrowserProvider, Contract, formatUnits, parseUnits, MaxUint256 } from 'ethers'
 import type { Signer } from 'ethers'
 import ZAKAT_ABI from './abi/zakatAbi.json'
 import TOKEN_ABI from './abi/tokenAbi.json'
@@ -181,4 +181,71 @@ export async function adminUpdateIncomeInfo(
     childStudyDeduction: parseUnits(info.childStudyDeduction, decimals),
     studyMaxDeduction: parseUnits(info.studyMaxDeduction, decimals),
   })
+}
+
+// ── User payment ──────────────────────────────────────────────────────────────
+
+export interface IncomePayParams {
+  isWithDeduction: boolean
+  payType: number           // IncomePayType enum: 0=STANDARD, 1=CUSTOM
+  annualIncome: string      // RM as decimal string
+  contribution: string      // pre-paid zakat RM as decimal string
+  customAmount: string      // custom amount RM as decimal string (use '0' for standard)
+  deductions: {
+    wifeCount: number
+    childMinorCount: number
+    childStudyCount: number
+    parentDeduction: string  // RM as decimal string
+    epfDeduction: string     // RM as decimal string
+    studyDeduction: string   // RM as decimal string
+  }
+}
+
+const ERC20_ABI = [
+  'function approve(address spender, uint256 amount) returns (bool)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+]
+
+async function ensureAllowance(signer: Signer, tokenAddress: string, requiredAmount: number) {
+  const tokenContract = new Contract(tokenAddress, ERC20_ABI, signer) as any
+  const signerAddress = await signer.getAddress()
+  const requiredRaw = parseUnits(requiredAmount.toFixed(6), TOKEN_DECIMALS)
+  const allowance: bigint = await tokenContract.allowance(signerAddress, CONTRACT_ADDRESS)
+  if (allowance < requiredRaw) {
+    const tx = await tokenContract.approve(CONTRACT_ADDRESS, MaxUint256)
+    await tx.wait()
+  }
+}
+
+export async function payFitrahZakat(
+  signer: Signer,
+  rateType: number,
+  count: number,
+  payAmount: number,
+) {
+  const contract = new Contract(CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
+  const tokenAddress: string = await contract.paymentToken()
+  await ensureAllowance(signer, tokenAddress, payAmount)
+  return contract.payFitrah(rateType, count)
+}
+
+export async function payIncomeZakat(signer: Signer, params: IncomePayParams, payAmount: number) {
+  const contract = new Contract(CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
+  const tokenAddress: string = await contract.paymentToken()
+  await ensureAllowance(signer, tokenAddress, payAmount)
+  return contract.payIncome(
+    params.isWithDeduction,
+    params.payType,
+    parseUnits(params.annualIncome, TOKEN_DECIMALS),
+    parseUnits(params.contribution, TOKEN_DECIMALS),
+    parseUnits(params.customAmount, TOKEN_DECIMALS),
+    {
+      wifeCount: params.deductions.wifeCount,
+      childMinorCount: params.deductions.childMinorCount,
+      childStudyCount: params.deductions.childStudyCount,
+      parentDeduction: parseUnits(params.deductions.parentDeduction, TOKEN_DECIMALS),
+      epfDeduction: parseUnits(params.deductions.epfDeduction, TOKEN_DECIMALS),
+      studyDeduction: parseUnits(params.deductions.studyDeduction, TOKEN_DECIMALS),
+    },
+  )
 }

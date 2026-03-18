@@ -39,8 +39,8 @@ const team = ref([
   },
   {
     name: 'Abdul Muniif',
-    role: 'Backend Developer',
-    description: 'Architecting scalable server-side systems and API integrations.',
+    role: 'Backend & Ai Developer',
+    description: 'Designs scalable backend systems and integrates LLM-powered chatbot solutions for the zakat chain platform.',
     icon: Database,
     image: muniifImg,
     linkedin: 'https://www.linkedin.com/in/abdul-muniif-620ba1215/',

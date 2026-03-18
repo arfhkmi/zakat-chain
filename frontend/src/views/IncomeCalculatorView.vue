@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
-import axios from 'axios'
-import Swal from 'sweetalert2'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { useSwal } from '../../utils/useSwal'
+import apiService from '../../utils/api'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,7 @@ import {
   ChevronLeft
 } from 'lucide-vue-next'
 import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/vue'
-import { BrowserProvider, parseEther, Contract, formatEther } from 'ethers'
-import ZAKAT_ABI from '../../utils/abi/zakatAbi.json'
+import { getSigner, payIncomeZakat, getIncomeInfo, type IncomePayParams, type IncomeInfo } from '../../utils/zakatInteraction'
 
 // --- Enums and Types ---
 enum CalculationType {
@@ -66,9 +65,6 @@ interface ZakatResult {
   deductionBreakdown?: DeductionBreakdown;
 }
 
-// --- Blockchain Constants ---
-const ZAKAT_CONTRACT_ADDRESS = import.meta.env.VITE_ZAKAT_CONTRACT_ADDRESS || ''
-
 // --- State ---
 const currentStep = ref<Step>('FORM')
 const calculationType = ref<CalculationType>(CalculationType.WITHOUT_DEDUCTIONS)
@@ -76,10 +72,20 @@ const incomeType = ref<IncomeType>(IncomeType.MONTHLY)
 const isLoading = ref(false)
 const result = ref<ZakatResult | null>(null)
 const txHash = ref('')
+const incomeInfoData = ref<IncomeInfo | null>(null)
 
 const { open } = useAppKit()
 const account = useAppKitAccount()
 const { walletProvider } = useAppKitProvider<any>('eip155')
+const { handleError } = useSwal()
+
+onMounted(async () => {
+  try {
+    incomeInfoData.value = await getIncomeInfo()
+  } catch (e) {
+    console.error('Failed to load income info from contract:', e)
+  }
+})
 
 const form = reactive({
   monthlyIncome: 0,
@@ -98,10 +104,16 @@ const form = reactive({
 
 // --- Methods ---
 const handleCalculate = async () => {
+  if (!incomeInfoData.value) {
+    handleError('Contract rates not loaded yet. Please wait and try again.', 'Not Ready')
+    return
+  }
   isLoading.value = true
-  
+
+  const { rate, threshold, selfDeduction, wifeDeduction, childMinorDeduction, childStudyDeduction, studyMaxDeduction } = incomeInfoData.value
   const payload: any = {
     calculationType: calculationType.value,
+    rates: { rate, threshold, selfDeduction, wifeDeduction, childMinorDeduction, childStudyDeduction, studyMaxDeduction },
   }
 
   if (calculationType.value === CalculationType.WITHOUT_DEDUCTIONS) {
@@ -124,19 +136,12 @@ const handleCalculate = async () => {
   }
 
   try {
-    const response = await axios.post('http://localhost:3000/zakat/income/calculate', payload)
+    const response = await apiService.apiCall('POST', '/zakat/income/calculate', payload)
     result.value = response.data
     currentStep.value = 'RESULT'
     window.scrollTo({ top: 0, behavior: 'smooth' })
   } catch (error: any) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Calculation Failed',
-      text: error.response?.data?.message || 'Something went wrong while connecting to the server.',
-      background: '#1a1a1a',
-      color: '#fff',
-      confirmButtonColor: '#00BB7F',
-    })
+    handleError(error.response?.data?.message || error, 'Calculation Failed')
   } finally {
     isLoading.value = false
   }
@@ -154,35 +159,37 @@ const handlePayment = async () => {
     isLoading.value = true
     currentStep.value = 'PROCESSING'
 
-    const provider = new BrowserProvider(walletProvider.value)
-    const signer = await provider.getSigner()
-    
-    // For Godamsahur/Hackathon purposes, let's assume 1 RM = 0.00001 BNB (Dummy conversion)
-    // In a real app, you'd fetch the actual price seed/oracle
-    const ethAmount = (result.value.zakatPerYear * 0.00001).toFixed(6)
-    const valueToSend = parseEther(ethAmount)
+    const signer = await getSigner(walletProvider?.value)
 
-    const contract = new Contract(ZAKAT_CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
-    
-    // Call payZakat function (or send native if it's a direct transfer)
-    // Here we use a function call to demonstrate contract interaction
-    const tx = await contract.payZakat({ value: valueToSend })
-    
+    const annualIncome = incomeType.value === IncomeType.MONTHLY
+      ? form.monthlyIncome * 12 + form.otherIncome
+      : form.annualIncome + form.otherIncome
+    const epfDeduction = (annualIncome * form.deductions.epfPercentage) / 100
+
+    const params: IncomePayParams = {
+      isWithDeduction: calculationType.value === CalculationType.WITH_DEDUCTIONS,
+      payType: 0,
+      annualIncome: annualIncome.toFixed(6),
+      contribution: form.zakatContribution.toFixed(6),
+      customAmount: '0',
+      deductions: {
+        wifeCount: form.deductions.numberOfWives,
+        childMinorCount: form.deductions.numberOfChildrenUnder18,
+        childStudyCount: form.deductions.numberOfChildrenAbove18Studying,
+        parentDeduction: form.deductions.parentExpenses.toFixed(6),
+        epfDeduction: epfDeduction.toFixed(6),
+        studyDeduction: form.deductions.selfEducationExpenses.toFixed(6),
+      },
+    }
+
+    const tx = await payIncomeZakat(signer, params, result.value.zakatPerYear)
     txHash.value = tx.hash
     await tx.wait()
-    
+
     currentStep.value = 'SUCCESS'
   } catch (error: any) {
-    console.error('Payment error:', error)
     currentStep.value = 'RESULT'
-    Swal.fire({
-      icon: 'error',
-      title: 'Payment Failed',
-      text: error.message || 'Transaction was cancelled or failed.',
-      background: '#1a1a1a',
-      color: '#fff',
-      confirmButtonColor: '#00BB7F',
-    })
+    handleError(error, 'Payment Failed')
   } finally {
     isLoading.value = false
   }
@@ -599,7 +606,7 @@ watch(() => account.value.isConnected, (connected) => {
             <CardContent class="!p-6">
                 <div class="flex justify-between items-center text-sm">
                    <span class="opacity-50">Estimated Amount</span>
-                   <span class="font-bold text-primary font-mono">{{ ((result?.zakatPerYear || 0) * 0.00001).toFixed(6) }} tBNB</span>
+                   <span class="font-bold text-primary font-mono">{{ formatCurrency(result?.zakatPerYear || 0) }}</span>
                 </div>
             </CardContent>
          </Card>

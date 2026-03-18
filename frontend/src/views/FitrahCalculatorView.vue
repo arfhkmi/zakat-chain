@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import Swal from 'sweetalert2'
+import { useSwal } from '../../utils/useSwal'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,9 +18,8 @@ import {
   ArrowRight
 } from 'lucide-vue-next'
 import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/vue'
-import { BrowserProvider, Contract, parseUnits, MaxUint256 } from 'ethers'
-import ZAKAT_ABI from '../../utils/abi/zakatAbi.json'
-import { getFitrahRate, type FitrahRate } from '../../utils/zakatInteraction'
+import { getFitrahRate, getSigner, payFitrahZakat, type FitrahRate } from '../../utils/zakatInteraction'
+import apiService from '../../utils/api'
 import { onMounted } from 'vue'
 
 // FitrahRateType enum matches contract: 0=Local, 1=Import, 2=Basmathi
@@ -30,14 +29,20 @@ const RATE_TYPES = [
   { label: 'Premium (Basmathi)', value: 2, key: 'basmathiRate' as keyof FitrahRate },
 ]
 
-const TOKEN_DECIMALS = 18
-const ZAKAT_CONTRACT_ADDRESS = import.meta.env.VITE_ZAKAT_CONTRACT_ADDRESS || ''
-
 type Step = 'FORM' | 'RESULT' | 'NIYYAH' | 'PROCESSING' | 'SUCCESS'
 
 const currentStep = ref<Step>('FORM')
 const isLoading = ref(false)
+const isCalculating = ref(false)
 const txHash = ref('')
+
+interface FitrahApiResult {
+  numberOfPersons: number
+  ratePerPerson: number
+  totalAmount: number
+  breakdown: string
+}
+const fitrahApiResult = ref<FitrahApiResult | null>(null)
 
 const fitrahRateData = ref<FitrahRate | null>(null)
 const isLoadingRates = ref(false)
@@ -48,6 +53,7 @@ const count = ref(1)
 const { open } = useAppKit()
 const account = useAppKitAccount()
 const { walletProvider } = useAppKitProvider<any>('eip155')
+const { handleError } = useSwal()
 
 onMounted(async () => {
   isLoadingRates.value = true
@@ -72,6 +78,24 @@ const totalAmount = computed(() => ratePerPerson.value * count.value)
 const fmtRM = (v: number) =>
   `RM ${v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
+const handleCalculate = async () => {
+  if (!fitrahRateData.value || !selectedRateInfo.value) return
+  isCalculating.value = true
+  try {
+    const response = await apiService.apiCall('POST', '/zakat/fitrah/calculate', {
+      numberOfPersons: count.value,
+      ratePerPerson: ratePerPerson.value,
+    })
+    fitrahApiResult.value = response.data
+    currentStep.value = 'RESULT'
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  } catch (error: any) {
+    handleError(error.response?.data?.message || error, 'Calculation Failed')
+  } finally {
+    isCalculating.value = false
+  }
+}
+
 const handlePayment = async () => {
   if (!account.value.isConnected) {
     open()
@@ -82,43 +106,16 @@ const handlePayment = async () => {
     isLoading.value = true
     currentStep.value = 'PROCESSING'
 
-    const rawProvider = walletProvider?.value
-    if (!rawProvider) throw new Error('Wallet provider not available')
-    const provider = new BrowserProvider(rawProvider)
-    const signer = await provider.getSigner()
-    const contract = new Contract(ZAKAT_CONTRACT_ADDRESS, ZAKAT_ABI, signer) as any
-
-    // Get the payment token address and approve spending
-    const tokenAddress: string = await contract.paymentToken()
-    const erc20Abi = [
-      'function approve(address spender, uint256 amount) returns (bool)',
-      'function allowance(address owner, address spender) view returns (uint256)',
-    ]
-    const tokenContract = new Contract(tokenAddress, erc20Abi, signer) as any
-    const totalRaw = parseUnits(totalAmount.value.toFixed(TOKEN_DECIMALS), TOKEN_DECIMALS)
-
-    const allowance: bigint = await tokenContract.allowance(account.value.address, ZAKAT_CONTRACT_ADDRESS)
-    if (allowance < totalRaw) {
-      const approveTx = await tokenContract.approve(ZAKAT_CONTRACT_ADDRESS, MaxUint256)
-      await approveTx.wait()
-    }
-
-    const tx = await contract.payFitrah(selectedRateType.value, count.value)
+    const signer = await getSigner(walletProvider?.value)
+    const payAmount = fitrahApiResult.value?.totalAmount ?? totalAmount.value
+    const tx = await payFitrahZakat(signer, selectedRateType.value, count.value, payAmount)
     txHash.value = tx.hash
     await tx.wait()
 
     currentStep.value = 'SUCCESS'
   } catch (error: any) {
-    console.error(error)
     currentStep.value = 'FORM'
-    Swal.fire({
-      icon: 'error',
-      title: 'Payment Failed',
-      text: error.message || 'Transaction was cancelled or failed.',
-      background: '#1a1a1a',
-      color: '#fff',
-      confirmButtonColor: '#00BB7F',
-    })
+    handleError(error, 'Payment Failed')
   } finally {
     isLoading.value = false
   }
@@ -212,12 +209,13 @@ const handlePayment = async () => {
             </div>
 
             <Button
-              @click="currentStep = 'RESULT'"
-              :disabled="!fitrahRateData || totalAmount <= 0"
+              @click="handleCalculate"
+              :disabled="!fitrahRateData || totalAmount <= 0 || isCalculating"
               class="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-lg shadow-xl shadow-primary/20 rounded-2xl"
             >
-              <HandCoins class="w-5 h-5 !mr-2" />
-              Calculate
+              <RefreshCw v-if="isCalculating" class="w-5 h-5 !mr-2 animate-spin" />
+              <HandCoins v-else class="w-5 h-5 !mr-2" />
+              {{ isCalculating ? 'Calculating...' : 'Calculate' }}
             </Button>
 
           </CardContent>
@@ -262,7 +260,8 @@ const handlePayment = async () => {
             <!-- Total -->
             <div class="!p-6 bg-primary/5 border border-primary/20 rounded-2xl text-center space-y-1">
               <p class="text-xs font-bold uppercase tracking-widest opacity-50">Total Amount</p>
-              <p class="text-5xl font-black font-mono text-primary">{{ fmtRM(totalAmount) }}</p>
+              <p class="text-5xl font-black font-mono text-primary">{{ fmtRM(fitrahApiResult?.totalAmount ?? totalAmount) }}</p>
+              <p v-if="fitrahApiResult?.breakdown" class="text-xs text-muted-foreground !mt-1">{{ fitrahApiResult.breakdown }}</p>
             </div>
 
             <Button
@@ -395,7 +394,7 @@ const handlePayment = async () => {
 
               <div class="!p-6 bg-primary/5 rounded-2xl border border-primary/10 text-center">
                 <p class="text-[10px] font-black uppercase tracking-widest opacity-40 !mb-2">Total Paid</p>
-                <p class="text-4xl font-black text-primary font-mono">{{ fmtRM(totalAmount) }}</p>
+                <p class="text-4xl font-black text-primary font-mono">{{ fmtRM(fitrahApiResult?.totalAmount ?? totalAmount) }}</p>
               </div>
 
               <div class="flex justify-between items-center opacity-60">

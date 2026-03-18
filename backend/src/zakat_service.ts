@@ -3,20 +3,10 @@ import {
   ZakatRequestDto,
   CalculationType,
   IncomeType,
+  IncomeRates,
   WithoutDeductions,
   WithDeductions,
 } from './zakat_dto';
-
-const NISAB_2026 = 33_996;
-const ZAKAT_RATE = 0.025;
-
-const DEDUCTION_RATES = {
-  selfAllowance: 12_000,        
-  perWife: 5_000,               // max 4 wives
-  perChildUnder18: 2_000,
-  perChildAbove18Studying: 5_000,
-  selfEducationCap: 2_000,
-};
 
 // ---------------------------------------------------------------------------
 // Response shapes
@@ -48,6 +38,11 @@ export interface ZakatResult {
 @Injectable()
 export class ZakatService {
   calculate(dto: ZakatRequestDto): ZakatResult {
+    if (!dto.rates) {
+      throw new BadRequestException('rates object is required.');
+    }
+    const rates = dto.rates;
+
     switch (dto.calculationType) {
       case CalculationType.WITHOUT_DEDUCTIONS:
         if (!dto.withoutDeductions) {
@@ -55,7 +50,7 @@ export class ZakatService {
             'withoutDeductions object is required for WITHOUT_DEDUCTIONS mode.',
           );
         }
-        return this.calculateWithoutDeductions(dto.withoutDeductions);
+        return this.calculateWithoutDeductions(dto.withoutDeductions, rates);
 
       case CalculationType.WITH_DEDUCTIONS:
         if (!dto.withDeductions) {
@@ -63,7 +58,7 @@ export class ZakatService {
             'withDeductions object is required for WITH_DEDUCTIONS mode.',
           );
         }
-        return this.calculateWithDeductions(dto.withDeductions);
+        return this.calculateWithDeductions(dto.withDeductions, rates);
 
       default:
         throw new BadRequestException('Invalid calculationType.');
@@ -73,28 +68,25 @@ export class ZakatService {
   // -------------------------------------------------------------------------
   // Mode 1: Without Deductions
   // -------------------------------------------------------------------------
-  private calculateWithoutDeductions(data: WithoutDeductions): ZakatResult {
+  private calculateWithoutDeductions(data: WithoutDeductions, rates: IncomeRates): ZakatResult {
     const annualSalary = this.annualize(
       data.incomeType,
       data.monthlyIncome,
       data.annualIncome,
     );
 
+    const zakatRate = rates.rate / 10_000;  // basis points → decimal (250 → 0.025)
     const otherIncome = data.otherIncome ?? 0;
     const totalAnnualIncome = annualSalary + otherIncome;
     const zakatContribution = data.zakatContribution ?? 0;
 
-    const isEligible = totalAnnualIncome >= NISAB_2026;
+    const isEligible = totalAnnualIncome >= rates.threshold;
 
     if (!isEligible) {
-      return this.buildResult({
-        totalAnnualIncome,
-        zakatContribution,
-        isEligible: false,
-      });
+      return this.buildResult({ totalAnnualIncome, zakatContribution, isEligible: false, nisab: rates.threshold });
     }
 
-    const grossZakat = round2(totalAnnualIncome * ZAKAT_RATE);
+    const grossZakat = round2(totalAnnualIncome * zakatRate);
     const amountAfterContribution = Math.max(0, grossZakat - zakatContribution);
 
     return this.buildResult({
@@ -103,19 +95,21 @@ export class ZakatService {
       isEligible: true,
       grossZakat,
       amountAfterContribution,
+      nisab: rates.threshold,
     });
   }
 
   // -------------------------------------------------------------------------
   // Mode 2: With Deductions
   // -------------------------------------------------------------------------
-  private calculateWithDeductions(data: WithDeductions): ZakatResult {
+  private calculateWithDeductions(data: WithDeductions, rates: IncomeRates): ZakatResult {
     const annualSalary = this.annualize(
       data.incomeType,
       data.monthlyIncome,
       data.annualIncome,
     );
 
+    const zakatRate = rates.rate / 10_000;  // basis points → decimal (250 → 0.025)
     const otherIncome = data.otherIncome ?? 0;
     const totalAnnualIncome = annualSalary + otherIncome;
     const zakatContribution = data.zakatContribution ?? 0;
@@ -128,20 +122,20 @@ export class ZakatService {
     const numberOfChildrenAbove18Studying = Math.max(0, d.numberOfChildrenAbove18Studying ?? 0);
     const epfPercentage = Math.min(Math.max(0, d.epfPercentage ?? 0), 100);
 
-    // Calculate each deduction
-    const selfAllowance = DEDUCTION_RATES.selfAllowance;
-    const wives = numberOfWives * DEDUCTION_RATES.perWife;
-    const childrenUnder18 = numberOfChildrenUnder18 * DEDUCTION_RATES.perChildUnder18;
-    const childrenAbove18Studying = numberOfChildrenAbove18Studying * DEDUCTION_RATES.perChildAbove18Studying;
+    // Calculate each deduction using contract rates
+    const selfAllowance = rates.selfDeduction;
+    const wives = numberOfWives * rates.wifeDeduction;
+    const childrenUnder18 = numberOfChildrenUnder18 * rates.childMinorDeduction;
+    const childrenAbove18Studying = numberOfChildrenAbove18Studying * rates.childStudyDeduction;
     const parentExpenses = Math.max(0, d.parentExpenses ?? 0);
 
     // EPF applies only on salary portion (not otherIncome)
     const epf = round2((epfPercentage / 100) * annualSalary);
 
-    // Self education capped at RM 2,000
+    // Self education capped at contract studyMaxDeduction
     const selfEducation = Math.min(
       Math.max(0, d.selfEducationExpenses ?? 0),
-      DEDUCTION_RATES.selfEducationCap,
+      rates.studyMaxDeduction,
     );
 
     const totalDeductions = round2(
@@ -155,7 +149,7 @@ export class ZakatService {
     );
 
     const eligibleIncome = Math.max(0, round2(totalAnnualIncome - totalDeductions));
-    const isEligible = eligibleIncome >= NISAB_2026;
+    const isEligible = eligibleIncome >= rates.threshold;
 
     const deductionBreakdown: DeductionBreakdown = {
       selfAllowance,
@@ -176,10 +170,11 @@ export class ZakatService {
         zakatContribution,
         isEligible: false,
         deductionBreakdown,
+        nisab: rates.threshold,
       });
     }
 
-    const grossZakat = round2(eligibleIncome * ZAKAT_RATE);
+    const grossZakat = round2(eligibleIncome * zakatRate);
     const amountAfterContribution = Math.max(0, grossZakat - zakatContribution);
 
     return this.buildResult({
@@ -191,6 +186,7 @@ export class ZakatService {
       grossZakat,
       amountAfterContribution,
       deductionBreakdown,
+      nisab: rates.threshold,
     });
   }
 
@@ -232,6 +228,7 @@ export class ZakatService {
     grossZakat?: number;
     amountAfterContribution?: number;
     deductionBreakdown?: DeductionBreakdown;
+    nisab: number;
   }): ZakatResult {
     const {
       totalAnnualIncome,
@@ -241,6 +238,7 @@ export class ZakatService {
       isEligible,
       amountAfterContribution,
       deductionBreakdown,
+      nisab,
     } = params;
 
     const effectiveEligibleIncome = eligibleIncome ?? totalAnnualIncome;
@@ -248,7 +246,7 @@ export class ZakatService {
     const zakatPerMonth = round2(zakatPerYear / 12);
 
     return {
-      nisab: NISAB_2026,
+      nisab,
       totalAnnualIncome,
       ...(totalDeductions !== undefined && { totalDeductions }),
       eligibleIncome: effectiveEligibleIncome,
