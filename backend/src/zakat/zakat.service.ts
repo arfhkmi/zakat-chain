@@ -1,16 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import {
-  ZakatRequestDto,
-  CalculationType,
-  IncomeType,
-  IncomeRates,
-  WithoutDeductions,
-  WithDeductions,
-} from './zakat_dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { FitrahCalculatorDto, FitrahResponseDto } from './dto/fitrah-calculator.dto';
+import { CalculationType, IncomeCalculatorDto, IncomeRates, IncomeType, WithDeductions, WithoutDeductions } from './dto/income-calculator.dto';
 
-// ---------------------------------------------------------------------------
-// Response shapes
-// ---------------------------------------------------------------------------
+const SCOPE = 'Kuala Lumpur dan Wilayah Persekutuan';
+
+// Response interfaces
 export interface DeductionBreakdown {
   selfAllowance: number;
   wives: number;
@@ -21,7 +15,6 @@ export interface DeductionBreakdown {
   selfEducation: number;
   total: number;
 }
-
 export interface ZakatResult {
   nisab: number;
   totalAnnualIncome: number;
@@ -37,7 +30,7 @@ export interface ZakatResult {
 
 @Injectable()
 export class ZakatService {
-  calculate(dto: ZakatRequestDto): ZakatResult {
+  calculateIncome(dto: IncomeCalculatorDto): ZakatResult {
     if (!dto.rates) {
       throw new BadRequestException('rates object is required.');
     }
@@ -65,9 +58,20 @@ export class ZakatService {
     }
   }
 
-  // -------------------------------------------------------------------------
+  calculateFitrah(dto: FitrahCalculatorDto): FitrahResponseDto {
+    const { numberOfPersons, ratePerPerson } = dto;
+    const totalAmount = numberOfPersons * ratePerPerson;
+    const personLabel = numberOfPersons === 1 ? 'person' : 'persons';
+
+    return {
+      numberOfPersons,
+      ratePerPerson,
+      totalAmount,
+      breakdown: `${numberOfPersons} ${personLabel} * RM ${ratePerPerson} = RM ${totalAmount} (${SCOPE})`,
+    };
+  }
+
   // Mode 1: Without Deductions
-  // -------------------------------------------------------------------------
   private calculateWithoutDeductions(data: WithoutDeductions, rates: IncomeRates): ZakatResult {
     const annualSalary = this.annualize(
       data.incomeType,
@@ -99,9 +103,7 @@ export class ZakatService {
     });
   }
 
-  // -------------------------------------------------------------------------
   // Mode 2: With Deductions
-  // -------------------------------------------------------------------------
   private calculateWithDeductions(data: WithDeductions, rates: IncomeRates): ZakatResult {
     const annualSalary = this.annualize(
       data.incomeType,
@@ -190,9 +192,7 @@ export class ZakatService {
     });
   }
 
-  // -------------------------------------------------------------------------
   // Helpers
-  // -------------------------------------------------------------------------
   private annualize(
     incomeType: IncomeType,
     monthly?: number,
@@ -260,9 +260,6 @@ export class ZakatService {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }

@@ -1,9 +1,9 @@
-export class ZakatFitrahCalculateDto {
+export class FitrahCalculatorDto {
   numberOfPersons!: number;
   ratePerPerson!: number;
 }
 
-export class ZakatFitrahResponseDto {
+export class FitrahResponseDto {
   numberOfPersons!: number;
   ratePerPerson!: number;
   totalAmount!: number;
