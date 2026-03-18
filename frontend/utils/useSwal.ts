@@ -56,14 +56,14 @@ export const useSwal = () => {
    * Display an error alert or toast
    */
   const handleError = (error: any, title: string = 'Error', isToast = false) => {
-    const message = typeof error === 'string' ? error : error?.message || 'Something went wrong'
     console.error('Swal Error:', error)
-    
+
+    const message = 'Something happened. Please try again later or contact the developer.'
+
     if (isToast) {
       return Toast.fire({
         icon: 'error',
-        title: title === 'Error' ? message : title,
-        text: title === 'Error' ? undefined : message,
+        title: message,
         iconColor: 'oklch(0.627 0.258 23.5)',
       })
     }
@@ -71,9 +71,9 @@ export const useSwal = () => {
     return Swal.fire({
       ...baseConfig,
       icon: 'error',
-      title: title,
+      title: 'Oops!',
       text: message,
-      iconColor: 'oklch(0.627 0.258 23.5)', // Matching --error color
+      iconColor: 'oklch(0.627 0.258 23.5)',
     })
   }
 
