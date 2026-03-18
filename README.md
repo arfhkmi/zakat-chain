@@ -1,5 +1,40 @@
 # Zakat Chain
 
+HOW TO RUN ZAKATCHAIN (DOCKER)
+================================
+ 
+REQUIREMENTS
+- Install Docker Desktop
+  Search "Docker Desktop" on Google or go to:
+  https://www.docker.com/products/docker-desktop
+  Just select the free one 
+  Make sure Docker Desktop is running before continuing.
+ 
+STEPS
+1. Run this command:
+ 
+   docker-compose up --build
+ 
+   First run will automatically download the AI model (~4.7GB).
+   Just wait, no manual steps needed.
+ 
+4. Open the app:
+   - Frontend : http://localhost:8080
+ 
+STOP
+   docker-compose down
+ 
+START AGAIN (no rebuild needed)
+   docker-compose up -d
+ 
+---------------------------------------------
+GPU NOTICE
+ 
+NVIDIA GPU  : AI chatbot responds in 10-30 seconds
+No NVIDIA   : AI chatbot may take 2-5 minutes or timeout
+              (Calculator and payment features are not affected)
+---------------------------------------------
+
 A blockchain-based Zakat payment platform built for transparency and trust. Zakat Chain enables Muslims to calculate and pay their **Income Zakat (Zakat Pendapatan)** and **Fitrah Zakat** through a smart contract on the BNB Smart Chain testnet, ensuring every contribution is verifiable on-chain.
 
 > Built for [Goddam Sahur 2026](https://sahur.dev/) — a Ramadan hackathon celebrating builders in the Muslim tech community.
