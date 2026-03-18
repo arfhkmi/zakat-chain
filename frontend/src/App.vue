@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import Layout from './components/layout/Layout.vue'
 import AdminLayout from './components/layout/AdminLayout.vue'
+import ChatWidget from './components/ChatWidget.vue'
 
 const route = useRoute()
 const isAdminPage = computed(() => route.path.startsWith('/admin'))
@@ -25,5 +26,6 @@ const isAdminLogin = computed(() => route.path === '/admin/login' || route.path 
     <Layout>
       <RouterView />
     </Layout>
+    <ChatWidget />
   </template>
 </template>
