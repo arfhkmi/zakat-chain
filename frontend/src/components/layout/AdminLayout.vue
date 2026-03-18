@@ -97,21 +97,6 @@ const handleLogout = () => {
   animation-fill-mode: both;
 }
 </style>
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Button } from '@/components/ui/button'
-import { ShieldCheck, LogOut, RefreshCw } from 'lucide-vue-next'
-
-const router = useRouter()
-const isLoading = ref(false)
-
-const handleLogout = () => {
-  localStorage.removeItem('admin_auth')
-  router.push('/admin/login')
-}
-
-</script>
 
 <template>
   <div class="min-h-screen bg-[#020617] text-slate-200 selection:bg-primary/30">
