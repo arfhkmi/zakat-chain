@@ -1,0 +1,18 @@
+module.exports = [
+  "0x6270f082dEa012a20A101bEf7117F651f6B91cae",
+  "0x053009996949Cc9fc62899b3a00ce80F58a4c7cB",
+  {
+    rate: 250n,
+    threshold: 33996000000000000000000n,
+    selfDeduction: 12000000000000000000000n,
+    wifeDeduction: 5000000000000000000000n,
+    childMinorDeduction: 2000000000000000000000n,
+    childStudyDeduction: 5000000000000000000000n,
+    studyMaxDeduction: 2000000000000000000000n,
+  },
+  {
+    localRate: 8000000000000000000n,
+    importRate: 15000000000000000000n,
+    basmathiRate: 25000000000000000000n,
+  }
+];
