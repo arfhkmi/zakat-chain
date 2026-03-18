@@ -10,7 +10,7 @@ interface Message {
 
 const isOpen = ref(false)
 const messages = ref<Message[]>([
-  { role: 'bot', text: 'Assalamualaikum! I\'m ZakatChain\'s assistant. Ask me anything about Zakat Pendapatan or Zakat Fitrah for KL/Wilayah Persekutuan.' }
+  { role: 'bot', text: 'Assalamualaikum! I\'m ZakatChain\'s assistant. Ask me anything about Zakat Pendapatan, Zakat Fitrah or Our Zakat crypto payment' }
 ])
 const input = ref('')
 const isLoading = ref(false)

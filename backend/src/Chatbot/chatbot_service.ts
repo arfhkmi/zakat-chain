@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   ChatMessageDto,
@@ -526,10 +526,9 @@ export class ChatbotService {
       }
 
       return data.message.content.trim();
-    } catch (err) {
-      throw new InternalServerErrorException(
-        `Ollama error: ${err.message}`,
-      );
+    } catch (err: any) {
+      console.error('Ollama unreachable:', err?.message);
+      return 'Our AI assistant is temporarily unavailable. Please try again in a moment.';
     }
   }
 
