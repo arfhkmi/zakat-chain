@@ -40,7 +40,7 @@ const contractAddress = import.meta.env.VITE_ZAKAT_CONTRACT_ADDRESS
 
 const isLoading = ref(true)
 const isUpdating = ref(false)
-const adminAuth = ref(localStorage.getItem('admin_auth') === 'true')
+const adminAuth = ref(!!localStorage.getItem('admin_token'))
 
 const { handleSuccess, handleError, handleLoading } = useSwal()
 const { walletProvider } = useAppKitProvider<any>('eip155')
@@ -113,7 +113,6 @@ const fetchData = async () => {
     const token = await getTokenInfo(data.paymentToken)
     tokenInfo.value = token
     contractData.value = data
-    newCollector.value = data.collector
 
     const dec = token.decimals
     newFitrahRates.value = {
@@ -201,10 +200,10 @@ onUnmounted(() => {
     <div class="!space-y-8">
 
       <!-- Page Header -->
-      <div class="flex items-start justify-between">
+      <div class="!pt-20 flex items-start justify-between">
         <div>
           <div class="flex items-center !gap-3 !mb-1">
-            <h2 class="text-2xl font-bold text-white tracking-tight">Contract Dashboard</h2>
+            <h2 class=" text-2xl font-bold text-white tracking-tight">Contract Dashboard</h2>
            
           </div>
           <p class="text-slate-500 text-sm">Monitor balances, configure rates, and manage zakat operations</p>

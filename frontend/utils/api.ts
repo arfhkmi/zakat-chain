@@ -14,9 +14,7 @@ const apiService = {
   ): Promise<AxiosResponse<T>> {
     const baseUrl = import.meta.env.VITE_URL_API || "";
     
-    const config: AxiosRequestConfig = {
-      withCredentials: true,
-    };
+    const config: AxiosRequestConfig = {};
 
     if (method === "GET") {
       config.params = params;

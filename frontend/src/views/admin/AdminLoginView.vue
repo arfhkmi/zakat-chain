@@ -5,34 +5,37 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ShieldCheck, Lock, ArrowRight, FlaskConical } from 'lucide-vue-next'
+import { ShieldCheck, Lock, User, ArrowRight } from 'lucide-vue-next'
 import { useSwal } from '../../../utils/useSwal'
+import apiService from '../../../utils/api'
 
 const router = useRouter()
+const username = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const { handleError } = useSwal()
 
-// Temporary fake auth — replace with real backend authentication
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123'
-
 const handleLogin = async () => {
-  if (!password.value) {
-    handleError('Please enter the admin password.', 'Missing Password')
+  if (!username.value || !password.value) {
+    handleError('Please enter both username and password.', 'Missing Credentials')
     return
   }
 
   isLoading.value = true
 
-  setTimeout(() => {
-    if (password.value === ADMIN_PASSWORD) {
-      localStorage.setItem('admin_auth', 'true')
-      router.push('/admin/dashboard')
-    } else {
-      handleError('Incorrect admin password.', 'Access Denied')
-    }
+  try {
+    const response = await apiService.apiCall<{ token: string }>('POST', '/auth/login', {
+      username: username.value,
+      password: password.value,
+    })
+    localStorage.setItem('admin_token', response.data.token)
+    router.push('/admin/dashboard')
+  } catch (err: any) {
+    const message = err.response?.data?.message || 'Invalid username or password'
+    handleError(message, 'Access Denied')
+  } finally {
     isLoading.value = false
-  }, 600)
+  }
 }
 </script>
 
@@ -51,12 +54,6 @@ const handleLogin = async () => {
         <p class="text-slate-400 !mt-2">Secure access to Zakat Chain management</p>
       </div>
 
-      <!-- Dev-mode notice -->
-      <div class="flex items-center !gap-2 !mb-4 !px-4 !py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
-        <FlaskConical class="w-4 h-4 shrink-0" />
-        <span>Placeholder login — awaiting backend integration. Password set via <code class="bg-amber-500/20 !px-1 rounded font-mono">VITE_ADMIN_PASSWORD</code>.</span>
-      </div>
-
       <Card class="!p-5 bg-slate-900/50 backdrop-blur-xl border-slate-800 shadow-2xl">
         <CardHeader>
           <CardTitle class="text-xl text-white">Login</CardTitle>
@@ -64,7 +61,21 @@ const handleLogin = async () => {
         </CardHeader>
         <CardContent class="!space-y-4">
           <div class="!space-y-2">
-            <Label for="password" class="text-slate-300">Admin Password</Label>
+            <Label for="username" class="text-slate-300">Username</Label>
+            <div class="relative">
+              <User class="absolute !left-3 !top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Input
+                id="username"
+                v-model="username"
+                type="text"
+                placeholder="Admin username"
+                class="bg-slate-950/50 border-slate-700 text-white !pl-10 h-12 focus-visible:ring-primary/50"
+                @keyup.enter="handleLogin"
+              />
+            </div>
+          </div>
+          <div class="!space-y-2">
+            <Label for="password" class="text-slate-300">Password</Label>
             <div class="relative">
               <Lock class="absolute !left-3 !top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <Input

@@ -41,7 +41,7 @@ watch(
 )
 
 const handleLogout = () => {
-  localStorage.removeItem('admin_auth')
+  localStorage.removeItem('admin_token')
   router.push('/admin/login')
 }
 </script>

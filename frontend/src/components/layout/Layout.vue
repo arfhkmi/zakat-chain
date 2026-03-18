@@ -47,7 +47,7 @@ const BSC_TESTNET = {
 watch(
   () => account.value?.isConnected,
   async (isConnected) => {
-    const provider = walletProvider.value as any
+    const provider = walletProvider?.value as any
     if (isConnected && provider) {
       try {
         await provider.request({

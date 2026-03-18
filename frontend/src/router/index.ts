@@ -67,9 +67,10 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth && localStorage.getItem('admin_auth') !== 'true') {
+  const isLoggedIn = !!localStorage.getItem('admin_token')
+  if (to.meta.requiresAuth && !isLoggedIn) {
     next('/admin/login')
-  } else if (to.name === 'admin-login' && localStorage.getItem('admin_auth') === 'true') {
+  } else if (to.name === 'admin-login' && isLoggedIn) {
     next('/admin/dashboard')
   } else {
     next()

@@ -392,7 +392,7 @@ const handlePayment = async () => {
                 </div>
               </div>
 
-              <div class="!p-6 bg-primary/5 rounded-2xl border border-primary/10 text-center">
+              <div class="!p-6 !mt-10 !mb-5 bg-primary/5 rounded-2xl border border-primary/10 text-center">
                 <p class="text-[10px] font-black uppercase tracking-widest opacity-40 !mb-2">Total Paid</p>
                 <p class="text-4xl font-black text-primary font-mono">{{ fmtRM(fitrahApiResult?.totalAmount ?? totalAmount) }}</p>
               </div>
